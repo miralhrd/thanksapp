@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>밀알복지재단 감사해U</title>
+<link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin/>
+<link rel="preconnect" href="https://unpkg.com" crossorigin/>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="dns-prefetch" href="https://script.google.com"/>
+<script src="https://cdn.tailwindcss.com" defer></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" defer></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" defer></script>
+<script src="assets/htm.js?v=3.2.3" defer></script>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/style.css?v=3.2.3"/>
+<script src="assets/config.js?v=3.2.3" defer></script>
+<script src="assets/api.js?v=3.2.3" defer></script>
+<script src="assets/app.js?v=3.2.3" defer></script>
+</head>
+<body class="season-summer">
+
+<!-- 🌊 여름 바다 배경 (React 바깥 · 순수 CSS) -->
+<div id="season-bg" aria-hidden="true">
+  <div class="s-sun"></div>
+  <div class="s-rays"></div>
+  <div class="s-shimmer s-shimmer--a"></div>
+  <div class="s-shimmer s-shimmer--b"></div>
+  <div class="s-caustics"></div>
+  <div class="s-glint"></div>
+  <div class="s-bubbles">
+    <i style="left:14%;--sz:9px;--dur:16s;--delay:-3s;--sway:12px;--maxop:.9"></i>
+    <i style="left:26%;--sz:22px;--dur:27s;--delay:-9s;--sway:-18px;--maxop:.36"></i>
+    <i style="left:38%;--sz:7px;--dur:14s;--delay:-6s;--sway:10px;--maxop:.9"></i>
+    <i style="left:50%;--sz:14px;--dur:20s;--delay:-1s;--sway:-13px;--maxop:.6"></i>
+    <i style="left:62%;--sz:8px;--dur:17s;--delay:-11s;--sway:14px;--maxop:.9"></i>
+    <i style="left:73%;--sz:26px;--dur:31s;--delay:-4s;--sway:-20px;--maxop:.32"></i>
+    <i style="left:84%;--sz:8px;--dur:15s;--delay:-13s;--sway:11px;--maxop:.9"></i>
+    <i style="left:92%;--sz:11px;--dur:21s;--delay:-7s;--sway:-13px;--maxop:.82"></i>
+    <i style="left:8%;--sz:7px;--dur:18s;--delay:-15s;--sway:9px;--maxop:.9"></i>
+    <i style="left:44%;--sz:19px;--dur:25s;--delay:-19s;--sway:16px;--maxop:.4"></i>
+    <i style="left:67%;--sz:10px;--dur:19s;--delay:-2s;--sway:-11px;--maxop:.84"></i>
+    <i style="left:33%;--sz:6px;--dur:13s;--delay:-8s;--sway:8px;--maxop:.9"></i>
+    <i style="left:79%;--sz:17px;--dur:24s;--delay:-12s;--sway:-15px;--maxop:.44"></i>
+    <i style="left:19%;--sz:13px;--dur:22s;--delay:-5s;--sway:13px;--maxop:.64"></i>
+  </div>
+  <div class="s-sparkles">
+    <i style="left:10%;bottom:16%;--sz:6px;--dur:4.6s;--delay:-.2s"></i>
+    <i style="left:18%;bottom:33%;--sz:5px;--dur:5.2s;--delay:-1.4s"></i>
+    <i style="left:24%;bottom:22%;--sz:7px;--dur:4.0s;--delay:-2.6s"></i>
+    <i style="left:31%;bottom:40%;--sz:4px;--dur:5.6s;--delay:-.8s"></i>
+    <i style="left:37%;bottom:14%;--sz:6px;--dur:4.3s;--delay:-3.1s"></i>
+    <i style="left:43%;bottom:29%;--sz:5px;--dur:5.0s;--delay:-1.7s"></i>
+    <i style="left:50%;bottom:38%;--sz:7px;--dur:4.7s;--delay:-2.2s"></i>
+    <i style="left:56%;bottom:19%;--sz:5px;--dur:5.4s;--delay:-.5s"></i>
+    <i style="left:62%;bottom:31%;--sz:6px;--dur:4.1s;--delay:-3.4s"></i>
+    <i style="left:68%;bottom:43%;--sz:4px;--dur:5.8s;--delay:-1.1s"></i>
+    <i style="left:74%;bottom:24%;--sz:6px;--dur:4.5s;--delay:-2.9s"></i>
+    <i style="left:80%;bottom:36%;--sz:5px;--dur:5.1s;--delay:-.9s"></i>
+    <i style="left:86%;bottom:17%;--sz:7px;--dur:4.4s;--delay:-3.6s"></i>
+    <i style="left:91%;bottom:30%;--sz:5px;--dur:5.5s;--delay:-1.9s"></i>
+  </div>
+  <div class="s-shore"></div>
+  <div class="s-foam"></div>
+  <div class="s-sand"></div>
+</div>
+
+<div id="root"></div>
+
+<!-- ⚡ 부팅 스플래시 (React 마운트 시 사라짐) -->
+<div id="boot-splash" aria-hidden="true">
+  <div class="bs-logo">🏖️</div>
+  <div class="bs-title">감사해U</div>
+  <div class="bs-sub">
+    <span class="bs-line" style="background:linear-gradient(90deg,transparent,#B7E4E8)"></span>
+    <span class="bs-org">밀알복지재단</span>
+    <span class="bs-line" style="background:linear-gradient(90deg,#B7E4E8,transparent)"></span>
+  </div>
+  <div class="bs-tag">따뜻한 밀알인 되기 프로젝트</div>
+  <div class="bs-dots"><i></i><i></i><i></i></div>
+  <div id="bs-fail" style="display:none;margin-top:22px;max-width:300px;font-size:12.5px;line-height:1.7;color:#334155;font-weight:600;">
+    화면을 불러오지 못했어요.<br/>인터넷 연결을 확인한 뒤 다시 시도해주세요.
+    <div id="bs-fail-detail" style="margin-top:6px;font-size:10.5px;color:#94A3B8;font-weight:500;"></div>
+    <button onclick="location.reload()" style="margin-top:12px;padding:10px 22px;border-radius:9999px;border:none;cursor:pointer;color:#fff;font-weight:700;font-size:13px;background:linear-gradient(135deg,#54C5D2,#31B2C2);box-shadow:0 6px 16px rgba(43,168,188,.25);">다시 시도</button>
+  </div>
+</div>
+<script>
+/* 안전장치: 스크립트가 로드되지 않거나 오류로 앱이 뜨지 않으면 스플래시에 안내 표시 (무한 로딩 방지) */
+(function(){
+  var shown = false;
+  function fail(msg){
+    if(shown) return; shown = true;
+    var s = document.getElementById("boot-splash"); if(!s || s.classList.contains("bs-hide")) return;
+    var d = s.querySelector(".bs-dots"); if(d) d.style.display = "none";
+    var f = document.getElementById("bs-fail"); if(f) f.style.display = "block";
+    var dt = document.getElementById("bs-fail-detail"); if(dt && msg) dt.textContent = msg;
+  }
+  window.addEventListener("error", function(e){
+    var m = (e && e.message) || "";
+    if(/is not defined|Cannot read|Unexpected|Failed to fetch/i.test(m)) fail("오류: " + m.slice(0,80));
+  });
+  setTimeout(function(){
+    var s = document.getElementById("boot-splash");
+    if(s && !s.classList.contains("bs-hide")){
+      var missing = [];
+      if(typeof React === "undefined") missing.push("React");
+      if(typeof htm === "undefined") missing.push("htm");
+      if(typeof window.GU === "undefined") missing.push("config");
+      fail(missing.length ? "불러오지 못한 항목: " + missing.join(", ") : "서버 응답이 늦어요. 잠시 후 다시 시도해주세요.");
+    }
+  }, 8000);
+})();
+</script>
+
+</body>
+</html>
