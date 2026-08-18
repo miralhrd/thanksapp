@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>밀알복지재단 감사해U — 시설 선택</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="dns-prefetch" href="https://script.google.com"/>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/style.css?v=3.2.2"/>
+<script src="assets/config.js?v=3.2.2" defer></script>
+<script src="assets/api.js?v=3.2.2" defer></script>
+</head>
+<body class="season-summer">
+
+<!-- 🌊 여름 바다 배경 -->
+<div id="season-bg" aria-hidden="true">
+  <div class="s-sun"></div>
+  <div class="s-rays"></div>
+  <div class="s-shimmer s-shimmer--a"></div>
+  <div class="s-shimmer s-shimmer--b"></div>
+  <div class="s-caustics"></div>
+  <div class="s-glint"></div>
+  <div class="s-shore"></div>
+  <div class="s-foam"></div>
+  <div class="s-sand"></div>
+</div>
+
+<div class="land-wrap">
+  <div class="slideUp" style="text-align:center;">
+    <div style="font-size:52px;line-height:1;margin-bottom:12px;filter:drop-shadow(0 6px 12px rgba(14,107,121,0.22));" class="bounceY">🏖️</div>
+    <div class="logo-font" style="font-size:46px;line-height:1;background:linear-gradient(135deg,#064E3B 0%,#047857 40%,#10B981 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">감사해U</div>
+    <div style="font-size:11px;font-weight:800;color:#0E6B79;letter-spacing:.06em;margin-top:10px;">따뜻한 밀알인 되기 프로젝트</div>
+    <div class="land-count" id="today-count" style="visibility:hidden;">
+      💌 오늘 오간 감사 쪽지 <b id="today-count-num">0</b>개
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:360px;" class="popIn">
+    <div style="font-size:11px;font-weight:800;color:#64748B;letter-spacing:.1em;text-transform:uppercase;text-align:center;margin-bottom:12px;">소속 시설을 선택해주세요</div>
+    <div id="fac-list"></div>
+  </div>
+
+  <div style="margin-top:26px;font-size:10px;color:#94A3B8;font-weight:600;letter-spacing:.12em;text-transform:uppercase;">MIRAL WELFARE FOUNDATION</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  var GU = window.GU;
+
+  // ⭐ 자동 로그인 정보가 있으면 랜딩을 건너뛰고 바로 앱으로 (replace → 뒤로가기 루프 방지)
+  var saved = GU.loadAuth();
+  if(saved && saved.uid && saved.pw){
+    location.replace("app.html?v=" + GU.VERSION);
+    return;
+  }
+
+  var ICONS = ["🌱", "🛍️", "🎁"];
+  var SUBS = ["재단 본부 · 산하 사업부", "송파 굿윌스토어", "기빙플러스"];
+  var listEl = document.getElementById("fac-list");
+  GU.FACILITIES.forEach(function(fac, i){
+    var btn = document.createElement("button");
+    btn.className = "fac-card";
+    btn.innerHTML =
+      '<div class="fc-icon">' + ICONS[i % ICONS.length] + '</div>' +
+      '<div><div class="fc-name">' + fac + '</div>' +
+      '<div class="fc-sub">' + (SUBS[i] || "") + '</div></div>' +
+      '<svg class="fc-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
+    btn.addEventListener("click", function(){
+      GU.saveFac(fac);
+      // 시설을 URL로도 전달 — 저장소가 제한된 환경(사내 브라우저 정책 등)에서도 안전
+      location.href = "app.html?fac=" + encodeURIComponent(fac) + "&v=" + GU.VERSION;
+    });
+    listEl.appendChild(btn);
+  });
+
+  // 오늘 쪽지 수 — 60초 로컬 캐시로 서버 재호출 억제
+  function showCount(n){
+    document.getElementById("today-count-num").textContent = n;
+    document.getElementById("today-count").style.visibility = "visible";
+  }
+  var cached = null;
+  try{ cached = JSON.parse(localStorage.getItem("gu3.landing") || "null"); }catch(e){}
+  if(cached && (Date.now() - cached.at) < 60000){
+    showCount(cached.n);
+  }else{
+    GU.api("getLanding").then(function(r){
+      if(r && r.ok){
+        showCount(r.todayCount || 0);
+        try{ localStorage.setItem("gu3.landing", JSON.stringify({ n:r.todayCount||0, at:Date.now() })); }catch(e){}
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
