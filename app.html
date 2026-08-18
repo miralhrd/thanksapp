@@ -13,13 +13,13 @@
 <script src="https://cdn.tailwindcss.com" defer></script>
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" defer></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" defer></script>
-<script src="https://unpkg.com/htm@3.2.2/dist/htm.js" defer></script>
+<script src="assets/htm.js?v=3.2.3" defer></script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="assets/style.css?v=3.2.2"/>
-<script src="assets/config.js?v=3.2.2" defer></script>
-<script src="assets/api.js?v=3.2.2" defer></script>
-<script src="assets/app.js?v=3.2.2" defer></script>
+<link rel="stylesheet" href="assets/style.css?v=3.2.3"/>
+<script src="assets/config.js?v=3.2.3" defer></script>
+<script src="assets/api.js?v=3.2.3" defer></script>
+<script src="assets/app.js?v=3.2.3" defer></script>
 </head>
 <body class="season-summer">
 
@@ -81,7 +81,39 @@
   </div>
   <div class="bs-tag">따뜻한 밀알인 되기 프로젝트</div>
   <div class="bs-dots"><i></i><i></i><i></i></div>
+  <div id="bs-fail" style="display:none;margin-top:22px;max-width:300px;font-size:12.5px;line-height:1.7;color:#334155;font-weight:600;">
+    화면을 불러오지 못했어요.<br/>인터넷 연결을 확인한 뒤 다시 시도해주세요.
+    <div id="bs-fail-detail" style="margin-top:6px;font-size:10.5px;color:#94A3B8;font-weight:500;"></div>
+    <button onclick="location.reload()" style="margin-top:12px;padding:10px 22px;border-radius:9999px;border:none;cursor:pointer;color:#fff;font-weight:700;font-size:13px;background:linear-gradient(135deg,#54C5D2,#31B2C2);box-shadow:0 6px 16px rgba(43,168,188,.25);">다시 시도</button>
+  </div>
 </div>
+<script>
+/* 안전장치: 스크립트가 로드되지 않거나 오류로 앱이 뜨지 않으면 스플래시에 안내 표시 (무한 로딩 방지) */
+(function(){
+  var shown = false;
+  function fail(msg){
+    if(shown) return; shown = true;
+    var s = document.getElementById("boot-splash"); if(!s || s.classList.contains("bs-hide")) return;
+    var d = s.querySelector(".bs-dots"); if(d) d.style.display = "none";
+    var f = document.getElementById("bs-fail"); if(f) f.style.display = "block";
+    var dt = document.getElementById("bs-fail-detail"); if(dt && msg) dt.textContent = msg;
+  }
+  window.addEventListener("error", function(e){
+    var m = (e && e.message) || "";
+    if(/is not defined|Cannot read|Unexpected|Failed to fetch/i.test(m)) fail("오류: " + m.slice(0,80));
+  });
+  setTimeout(function(){
+    var s = document.getElementById("boot-splash");
+    if(s && !s.classList.contains("bs-hide")){
+      var missing = [];
+      if(typeof React === "undefined") missing.push("React");
+      if(typeof htm === "undefined") missing.push("htm");
+      if(typeof window.GU === "undefined") missing.push("config");
+      fail(missing.length ? "불러오지 못한 항목: " + missing.join(", ") : "서버 응답이 늦어요. 잠시 후 다시 시도해주세요.");
+    }
+  }, 8000);
+})();
+</script>
 
 </body>
 </html>
