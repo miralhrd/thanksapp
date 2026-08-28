@@ -13,13 +13,42 @@
     adminGetStats:1, adminGetStaff:1, adminGetGifts:1, adminGetRewards:1, adminGetNotices:1
   };
 
+  // 진단용: 요청별 [총 왕복 ms / 서버 내부 처리 ms] 를 기록 — 콘솔에서 GU.perf 로 확인
+  //   총 왕복 ≫ 서버 처리 이면 Google Apps Script 기동/네트워크 비용(코드로 못 줄임),
+  //   서버 처리가 크면 우리 코드 문제.
+  GU.perf = [];
+  GU.pending = 0;   // 진행 중인 서버 요청 수 — app.html 스플래시 안전장치가 참고
   async function post(body){
-    var r = await fetch(GU.SHEET_URL, {
+    var t0 = performance.now();
+    GU.pending++;
+    var r;
+    try{ r = await fetch(GU.SHEET_URL, {
       method: "POST", mode: "cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(body)
-    });
-    return await r.json();
+    }); }catch(e){ GU.pending--; throw e; }
+    var j;
+    try{ j = await r.json(); }finally{ GU.pending--; }
+    try{
+      var rec = { action: body.action, total: Math.round(performance.now() - t0), server: (j && j._t) || null, at: new Date().toLocaleTimeString() };
+      GU.perf.push(rec);
+      if(GU.perf.length > 50) GU.perf.shift();
+      if(GU._debug) GU._debug(rec);
+    }catch(e){}
+    return j;
+  }
+  // 주소 뒤에 ?debug=1 을 붙이면 화면 왼쪽 아래에 최근 요청 시간이 표시됨 (원인 파악용 · 평소엔 안 보임)
+  if(/[?&]debug=1/.test(location.search)){
+    var box = null;
+    GU._debug = function(rec){
+      if(!box){
+        box = document.createElement("div");
+        box.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:9999;background:rgba(15,23,42,.88);color:#E2E8F0;font:11px/1.5 monospace;padding:8px 10px;border-radius:10px;max-width:280px;pointer-events:none;white-space:pre;";
+        document.body.appendChild(box);
+      }
+      var lines = GU.perf.slice(-6).map(function(p){ return p.at.slice(0,8) + " " + (p.action+"            ").slice(0,14) + " " + p.total + "ms" + (p.server != null ? " (서버 " + p.server + ")" : ""); });
+      box.textContent = "요청 시간 (총 / 서버처리)\n" + lines.join("\n");
+    };
   }
 
   GU.api = async function(action, payload){

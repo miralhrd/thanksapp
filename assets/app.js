@@ -435,6 +435,12 @@ function Emo({
   cls = "",
   style = {}
 }) {
+  // 메인 로고 자리(옛 파라솔): PC마다 다른 이모지 대신 항상 동일한 SVG 로고
+  if (code === "1f3d6") return /*#__PURE__*/React.createElement("span", {
+    className: cls,
+    style: { display: "inline-flex", alignItems: "center", justifyContent: "center", ...style },
+    dangerouslySetInnerHTML: { __html: window.GU.logoSvg(size) }
+  });
   return /*#__PURE__*/React.createElement("span", {
     className: cls,
     style: {
@@ -463,8 +469,8 @@ function Emo({
   }, ch));
 }
 function fireConfetti() {
-  const cols = ["#8AD7E0", "#2BA8BC", "#0E6B79", "#DAEFF0", "#58C6D4", "#EAF7F6", "#fff"];
-  const emos = ["💙", "🌊", "✨", "🐚"];
+  const cols = ["#E7C6A8", "#B1603E", "#5C4033", "#F4E6D3", "#D89A73", "#FAF3E8", "#fff"];
+  const emos = ["🧡", "🍁", "✨", "🍂"];
   for (let i = 0; i < 55; i++) {
     const e = document.createElement("div");
     e.className = "cbit";
@@ -551,40 +557,40 @@ function buildNotesHTML({
     const counterpart = isInbox ? m.from : m.to;
     const s = parseS(counterpart);
     const dateStr = fmtDateFull(m.ts);
-    const badge = isInbox ? `<span style="font-size:9.5px;font-weight:800;color:#0E6B79;background:#EAF7F6;border-radius:9999px;padding:2px 8px;letter-spacing:0.04em;flex-shrink:0;">FROM</span>` : `<span style="font-size:9.5px;font-weight:800;color:#475569;background:#F1F5F9;border-radius:9999px;padding:2px 8px;letter-spacing:0.04em;flex-shrink:0;">TO</span>`;
+    const badge = isInbox ? `<span style="font-size:9.5px;font-weight:800;color:#5C4033;background:#FAF3E8;border-radius:9999px;padding:2px 8px;letter-spacing:0.04em;flex-shrink:0;">FROM</span>` : `<span style="font-size:9.5px;font-weight:800;color:#475569;background:#F1F5F9;border-radius:9999px;padding:2px 8px;letter-spacing:0.04em;flex-shrink:0;">TO</span>`;
     return `
       <div class="pdf-card" style="width:100%;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid;background:#ffffff;border:1px solid #E2E8F0;border-radius:12px;padding:11px 14px;margin-bottom:9px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <div style="width:34px;height:34px;border-radius:50%;background:#EAF7F6;color:#0E6B79;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${escapeHtml(s.name.charAt(0))}</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:#FAF3E8;color:#5C4033;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${escapeHtml(s.name.charAt(0))}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:14px;font-weight:800;color:#0F172A;">${escapeHtml(s.name)} <span style="font-size:11px;color:#94A3B8;font-weight:500;">${escapeHtml(s.role)}</span></div>
             <div style="font-size:10.5px;color:#94A3B8;font-weight:500;">${escapeHtml(s.dept)}${dateStr ? ` · ${dateStr}` : ""}</div>
           </div>
           ${badge}
         </div>
-        <div style="background:#EDF7F6;border-left:3px solid #2BA8BC;border-radius:7px;padding:9px 12px;">
+        <div style="background:#FAF4EB;border-left:3px solid #B1603E;border-radius:7px;padding:9px 12px;">
           <span style="font-size:12.5px;color:#334155;font-weight:600;line-height:1.6;white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;">"${escapeHtml(m.message)}"</span>
         </div>
       </div>`;
   }).join("");
   return `
     <div style="background:#ffffff;padding:0;">
-      <div style="break-inside:avoid;page-break-inside:avoid;background:linear-gradient(135deg,#229AA8 0%,#54C5D2 100%);border-radius:14px;padding:13px 16px;text-align:center;color:#ffffff;margin-bottom:9px;">
+      <div style="break-inside:avoid;page-break-inside:avoid;background:linear-gradient(135deg,#A4492D 0%,#D28B62 100%);border-radius:14px;padding:13px 16px;text-align:center;color:#ffffff;margin-bottom:9px;">
         <div style="display:flex;align-items:center;justify-content:center;gap:7px;">
-          <span style="font-size:22px;line-height:1;">⛱️</span>
+          <span style="display:inline-flex;vertical-align:middle;">${window.GU.logoSvg(22)}</span>
           <span style="font-size:21px;font-weight:800;letter-spacing:-0.02em;">감사해U</span>
         </div>
         <div style="font-size:11.5px;font-weight:600;opacity:0.92;margin-top:3px;">${period} · ${title}</div>
       </div>
-      <div style="break-inside:avoid;page-break-inside:avoid;background:#EDF7F6;border:1px solid #B7E4E8;border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:9px;margin-bottom:6px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:#DAEFF0;color:#0E6B79;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${escapeHtml(pm.name.charAt(0))}</div>
+      <div style="break-inside:avoid;page-break-inside:avoid;background:#FAF4EB;border:1px solid #EBD5B7;border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:9px;margin-bottom:6px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#F4E6D3;color:#5C4033;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${escapeHtml(pm.name.charAt(0))}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:15px;font-weight:800;color:#0F172A;">${escapeHtml(pm.name)} <span style="font-size:11.5px;color:#64748B;font-weight:600;">${escapeHtml(pm.role)}</span></div>
           <div style="font-size:11px;color:#64748B;font-weight:600;">${escapeHtml(pm.dept)}</div>
         </div>
-        <div style="text-align:center;background:#ffffff;border:1px solid #B7E4E8;border-radius:10px;padding:5px 10px;flex-shrink:0;">
-          <div style="font-size:10px;color:#1791A2;font-weight:700;">마음의 온도</div>
-          <div style="font-size:15px;font-weight:800;color:#0E6B79;">${safeTemp.toFixed(1)}°C${medal ? ` ${medal}` : ""}</div>
+        <div style="text-align:center;background:#ffffff;border:1px solid #EBD5B7;border-radius:10px;padding:5px 10px;flex-shrink:0;">
+          <div style="font-size:10px;color:#96552F;font-weight:700;">마음의 온도</div>
+          <div style="font-size:15px;font-weight:800;color:#5C4033;">${safeTemp.toFixed(1)}°C${medal ? ` ${medal}` : ""}</div>
         </div>
       </div>
       <div style="text-align:center;font-size:11px;color:#94A3B8;font-weight:600;margin-bottom:10px;">
@@ -636,32 +642,32 @@ function buildDiaryHTML({
     return `
       <div class="pdf-card" style="width:100%;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid;background:#ffffff;border:1px solid #E2E8F0;border-radius:12px;padding:11px 14px;margin-bottom:9px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="font-size:16px;line-height:1;">🐚</span>
-          <div style="font-size:12px;color:#0E6B79;font-weight:800;">${escapeHtml(dateStr)}</div>
+          <span style="font-size:16px;line-height:1;">🍂</span>
+          <div style="font-size:12px;color:#5C4033;font-weight:800;">${escapeHtml(dateStr)}</div>
         </div>
-        <div style="background:#EDF7F6;border-left:3px solid #2BA8BC;border-radius:7px;padding:9px 12px;">
+        <div style="background:#FAF4EB;border-left:3px solid #B1603E;border-radius:7px;padding:9px 12px;">
           <span style="font-size:12.5px;color:#334155;font-weight:600;line-height:1.6;white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;">${escapeHtml(e.text)}</span>
         </div>
       </div>`;
   }).join("");
   return `
     <div style="background:#ffffff;padding:0;">
-      <div style="break-inside:avoid;page-break-inside:avoid;background:linear-gradient(135deg,#229AA8 0%,#54C5D2 100%);border-radius:14px;padding:13px 16px;text-align:center;color:#ffffff;margin-bottom:9px;">
+      <div style="break-inside:avoid;page-break-inside:avoid;background:linear-gradient(135deg,#A4492D 0%,#D28B62 100%);border-radius:14px;padding:13px 16px;text-align:center;color:#ffffff;margin-bottom:9px;">
         <div style="display:flex;align-items:center;justify-content:center;gap:7px;">
-          <span style="font-size:22px;line-height:1;">⛱️</span>
+          <span style="display:inline-flex;vertical-align:middle;">${window.GU.logoSvg(22)}</span>
           <span style="font-size:21px;font-weight:800;letter-spacing:-0.02em;">감사해U</span>
         </div>
         <div style="font-size:11.5px;font-weight:600;opacity:0.92;margin-top:3px;">${period} · ${title}</div>
       </div>
-      <div style="break-inside:avoid;page-break-inside:avoid;background:#EDF7F6;border:1px solid #B7E4E8;border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:9px;margin-bottom:6px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:#DAEFF0;color:#0E6B79;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${escapeHtml(pm.name.charAt(0))}</div>
+      <div style="break-inside:avoid;page-break-inside:avoid;background:#FAF4EB;border:1px solid #EBD5B7;border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:9px;margin-bottom:6px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#F4E6D3;color:#5C4033;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${escapeHtml(pm.name.charAt(0))}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:15px;font-weight:800;color:#0F172A;">${escapeHtml(pm.name)} <span style="font-size:11.5px;color:#64748B;font-weight:600;">${escapeHtml(pm.role)}</span></div>
           <div style="font-size:11px;color:#64748B;font-weight:600;">${escapeHtml(pm.dept)}</div>
         </div>
-        <div style="text-align:center;background:#ffffff;border:1px solid #B7E4E8;border-radius:10px;padding:5px 10px;flex-shrink:0;">
-          <div style="font-size:10px;color:#1791A2;font-weight:700;">마음의 온도</div>
-          <div style="font-size:15px;font-weight:800;color:#0E6B79;">${safeTemp.toFixed(1)}°C${medal ? ` ${medal}` : ""}</div>
+        <div style="text-align:center;background:#ffffff;border:1px solid #EBD5B7;border-radius:10px;padding:5px 10px;flex-shrink:0;">
+          <div style="font-size:10px;color:#96552F;font-weight:700;">마음의 온도</div>
+          <div style="font-size:15px;font-weight:800;color:#5C4033;">${safeTemp.toFixed(1)}°C${medal ? ` ${medal}` : ""}</div>
         </div>
       </div>
       <div style="text-align:center;font-size:11px;color:#94A3B8;font-weight:600;margin-bottom:10px;">
@@ -749,14 +755,14 @@ function Medal({
     width: "8",
     height: "13",
     rx: "1.5",
-    fill: "#2BA8BC"
+    fill: "#B1603E"
   }), /*#__PURE__*/React.createElement("rect", {
     x: "12.5",
     y: "0",
     width: "5",
     height: "13",
     rx: "1",
-    fill: "#58C6D4"
+    fill: "#D89A73"
   }), /*#__PURE__*/React.createElement("circle", {
     cx: "15",
     cy: "21",
@@ -856,7 +862,7 @@ function AppFooter() {
   return /*#__PURE__*/React.createElement("p", {
     className: "text-center pt-6 pb-5 text-[11px] font-bold tracking-wide",
     style: {
-      color: "#0C4A52"
+      color: "#3B2A20"
     }
   }, "밀알복지재단 교육문화팀");
 }
@@ -902,13 +908,13 @@ function Thermometer({
     y2: "0"
   }, /*#__PURE__*/React.createElement("stop", {
     offset: "0%",
-    stopColor: "#2FA1B0"
+    stopColor: "#A25638"
   }), /*#__PURE__*/React.createElement("stop", {
     offset: "45%",
-    stopColor: "#54C5D2"
+    stopColor: "#D28B62"
   }), /*#__PURE__*/React.createElement("stop", {
     offset: "100%",
-    stopColor: "#8BDAE3"
+    stopColor: "#EBCDB2"
   })), /*#__PURE__*/React.createElement("linearGradient", {
     id: "tube",
     x1: "0",
@@ -975,40 +981,40 @@ function Thermometer({
     y1: yAt(60),
     x2: "83",
     y2: yAt(60),
-    stroke: "#1791A2",
+    stroke: "#96552F",
     strokeWidth: "1.8"
   }), /*#__PURE__*/React.createElement("text", {
     x: "86",
     y: yAt(60) + 4,
     fontSize: "8.5",
     fontWeight: "800",
-    fill: "#0E6B79"
+    fill: "#5C4033"
   }, "60°C"), /*#__PURE__*/React.createElement("line", {
     x1: "74",
     y1: yAt(80),
     x2: "83",
     y2: yAt(80),
-    stroke: "#1791A2",
+    stroke: "#96552F",
     strokeWidth: "1.8"
   }), /*#__PURE__*/React.createElement("text", {
     x: "86",
     y: yAt(80) + 4,
     fontSize: "8.5",
     fontWeight: "800",
-    fill: "#0E6B79"
+    fill: "#5C4033"
   }, "80°C"), /*#__PURE__*/React.createElement("line", {
     x1: "74",
     y1: yAt(100),
     x2: "83",
     y2: yAt(100),
-    stroke: "#1791A2",
+    stroke: "#96552F",
     strokeWidth: "1.8"
   }), /*#__PURE__*/React.createElement("text", {
     x: "86",
     y: yAt(100) + 4,
     fontSize: "8.5",
     fontWeight: "800",
-    fill: "#0E6B79"
+    fill: "#5C4033"
   }, "100°C"));
 }
 function LoadingScreen({
@@ -1052,14 +1058,14 @@ function LoadingScreen({
       key: i,
       className: "flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-all duration-300",
       style: {
-        background: done || active ? 'rgba(43,168,188,0.07)' : 'transparent',
+        background: done || active ? 'rgba(177,96,62,0.07)' : 'transparent',
         opacity: i > step ? 0.25 : 1,
         transform: active ? 'scale(1.02)' : 'scale(1)'
       }
     }, /*#__PURE__*/React.createElement("span", {
       className: "w-5 text-center text-base flex-shrink-0"
     }, done ? "✅" : s.icon), /*#__PURE__*/React.createElement("span", {
-      className: `text-sm flex-1 track-tight ${active ? "font-extrabold text-sky-700" : "font-medium text-slate-500"}`
+      className: `text-sm flex-1 track-tight ${active ? "font-extrabold text-[#9A4B2E]" : "font-medium text-slate-500"}`
     }, s.label), active && /*#__PURE__*/React.createElement("div", {
       className: "sp sp-g flex-shrink-0",
       style: {
@@ -1077,11 +1083,11 @@ function LoadingScreen({
     className: "h-full rounded-full",
     style: {
       width: `${pct}%`,
-      background: "linear-gradient(90deg,#54C5D2,#31B2C2)",
+      background: "linear-gradient(90deg,#D28B62,#BC5B33)",
       transition: "width 0.35s ease"
     }
   })), /*#__PURE__*/React.createElement("p", {
-    className: "text-[10px] font-extrabold text-sky-600 tabular tracking-widest"
+    className: "text-[10px] font-extrabold text-[#BC5B33] tabular tracking-widest"
   }, pct, "%")));
 }
 function PinInput({
@@ -1111,7 +1117,7 @@ function PinInput({
     },
     placeholder: "비밀번호 4자리 입력",
     style: {
-      caretColor: "#2BA8BC",
+      caretColor: "#B1603E",
       paddingRight: "48px"
     },
     className: "pin-input ipt w-full px-4 py-3.5 text-slate-900 text-left text-xl font-extrabold tracking-[0.3em]"
@@ -1164,12 +1170,12 @@ function PersonItem({
   return /*#__PURE__*/React.createElement("button", {
     onMouseDown: e => e.preventDefault(),
     onClick: () => onSelect(person._key),
-    className: "w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-sky-50/60 border-b border-slate-50 last:border-0 transition-colors duration-150"
+    className: "w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[#FAF3E8]/60 border-b border-slate-50 last:border-0 transition-colors duration-150"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs flex-shrink-0",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      color: "#0E6B79"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      color: "#5C4033"
     }
   }, person.name.charAt(0)), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0 flex-1"
@@ -1374,7 +1380,7 @@ function LoginScreen({
       opacity: 0.5,
       animation: "floatA 4s 0.2s ease-in-out infinite"
     }
-  }, "🌊"), /*#__PURE__*/React.createElement("span", {
+  }, "🍁"), /*#__PURE__*/React.createElement("span", {
     style: {
       position: "absolute",
       right: "10px",
@@ -1392,7 +1398,7 @@ function LoginScreen({
       opacity: 0.45,
       animation: "floatB 4.5s 0.5s ease-in-out infinite"
     }
-  }, "🌴"), /*#__PURE__*/React.createElement("span", {
+  }, "🍂"), /*#__PURE__*/React.createElement("span", {
     style: {
       position: "absolute",
       right: "18px",
@@ -1401,7 +1407,7 @@ function LoginScreen({
       opacity: 0.42,
       animation: "floatA 5s 0.8s ease-in-out infinite"
     }
-  }, "🐚"), /*#__PURE__*/React.createElement("div", {
+  }, "🍂"), /*#__PURE__*/React.createElement("div", {
     style: {
       position: "relative",
       display: "inline-block",
@@ -1412,7 +1418,7 @@ function LoginScreen({
       position: "absolute",
       inset: "-20px",
       borderRadius: "50%",
-      background: "radial-gradient(circle,rgba(84,197,210,0.36),transparent 70%)",
+      background: "radial-gradient(circle,rgba(216,154,115,0.36),transparent 70%)",
       filter: "blur(14px)"
     }
   }), /*#__PURE__*/React.createElement(Emo, {
@@ -1422,7 +1428,7 @@ function LoginScreen({
     cls: "wiggle",
     style: {
       position: "relative",
-      filter: "drop-shadow(0 6px 12px rgba(14,107,121,0.22))"
+      filter: "drop-shadow(0 6px 12px rgba(92,64,51,0.22))"
     }
   })), /*#__PURE__*/React.createElement("h1", {
     className: "logo-font",
@@ -1430,10 +1436,10 @@ function LoginScreen({
       fontSize: "56px",
       lineHeight: 1,
       marginBottom: "12px",
-      background: "linear-gradient(135deg,#064E3B 0%,#047857 40%,#10B981 100%)",
+      background: "linear-gradient(135deg,#3B2A20 0%,#8B4F38 40%,#A4492D 100%)",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
-      filter: "drop-shadow(0 2px 10px rgba(16,185,129,0.18))"
+      filter: "drop-shadow(0 2px 10px rgba(164,73,45,0.18))"
     }
   }, "감사해U"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1447,7 +1453,7 @@ function LoginScreen({
     style: {
       width: "32px",
       height: "1px",
-      background: "linear-gradient(90deg,transparent,#B7E4E8)"
+      background: "linear-gradient(90deg,transparent,#EBD5B7)"
     }
   }), /*#__PURE__*/React.createElement("span", {
     style: {
@@ -1461,13 +1467,13 @@ function LoginScreen({
     style: {
       width: "32px",
       height: "1px",
-      background: "linear-gradient(90deg,#B7E4E8,transparent)"
+      background: "linear-gradient(90deg,#EBD5B7,transparent)"
     }
   })), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: "12px",
       fontWeight: 800,
-      color: "#0E6B79",
+      color: "#5C4033",
       letterSpacing: "0.06em"
     }
   }, "따뜻한 밀알인 되기 프로젝트"), /*#__PURE__*/React.createElement("button", {
@@ -1477,9 +1483,9 @@ function LoginScreen({
     },
     className: "mt-3 text-[11px] font-bold btn",
     style: {
-      color: "#1791A2",
+      color: "#96552F",
       background: "rgba(255,255,255,0.65)",
-      border: "1px solid rgba(43,168,188,0.25)",
+      border: "1px solid rgba(177,96,62,0.25)",
       borderRadius: "9999px",
       padding: "5px 14px"
     }
@@ -1552,17 +1558,17 @@ function LoginScreen({
     className: "popIn"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: reset,
-    className: "text-xs font-bold text-sky-700 hover:text-sky-900 mb-5 btn track-tight"
+    className: "text-xs font-bold text-[#9A4B2E] hover:text-[#5C4033] mb-5 btn track-tight"
   }, "← 이름 다시 선택"), /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl p-4 mb-5 text-center",
     style: {
-      background: "linear-gradient(180deg,#EAF7F6,#EDF7F6)",
-      border: "1px solid rgba(43,168,188,0.15)"
+      background: "linear-gradient(180deg,#FAF3E8,#FAF4EB)",
+      border: "1px solid rgba(177,96,62,0.15)"
     }
   }, /*#__PURE__*/React.createElement("p", {
-    className: "font-extrabold text-sky-900 text-sm track-tight"
-  }, "처음 오셨군요! 환영해요 ⛱️"), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs text-sky-700 mt-1 font-medium"
+    className: "font-extrabold text-[#5C4033] text-sm track-tight"
+  }, "처음 오셨군요! 환영해요 🍂"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-[#9A4B2E] mt-1 font-medium"
   }, "앞으로 사용할 비밀번호 4자리를 설정해주세요")), /*#__PURE__*/React.createElement("label", {
     className: "block text-[11px] font-extrabold text-slate-600 mb-2 tracking-widest uppercase"
   }, "비밀번호 (숫자 4자리)"), /*#__PURE__*/React.createElement(PinInput, {
@@ -1586,7 +1592,7 @@ function LoginScreen({
     className: "popIn"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: reset,
-    className: "text-xs font-bold text-sky-700 hover:text-sky-900 mb-5 btn track-tight"
+    className: "text-xs font-bold text-[#9A4B2E] hover:text-[#5C4033] mb-5 btn track-tight"
   }, "← 이름 다시 선택"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3 rounded-2xl p-4 mb-5",
     style: {
@@ -1596,8 +1602,8 @@ function LoginScreen({
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-12 h-12 rounded-full flex items-center justify-center font-extrabold text-lg flex-shrink-0",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      color: "#0E6B79"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      color: "#5C4033"
     }
   }, sp.name.charAt(0)), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0"
@@ -1634,14 +1640,14 @@ function LoginScreen({
     style: {
       width: "15px",
       height: "15px",
-      accentColor: "#2BA8BC"
+      accentColor: "#B1603E"
     }
   }), "자동 로그인 (다음부터 바로 들어가요)"), step !== "select" && /*#__PURE__*/React.createElement("p", {
     className: "text-center text-[10px] text-slate-400 font-medium mt-1"
   }, "이 기기에 로그인 정보가 저장돼요. 공용 PC라면 해제하거나 로그아웃해주세요"), /*#__PURE__*/React.createElement("p", {
     className: "text-center mt-5 text-[12px] leading-relaxed font-bold",
     style: {
-      color: "#0C4A52"
+      color: "#3B2A20"
     }
   }, "비밀번호를 잊으셨다면", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
     style: {
@@ -1928,12 +1934,12 @@ function Dashboard({
     size: 28,
     cls: "wiggle",
     style: {
-      filter: "drop-shadow(0 2px 6px rgba(14,107,121,0.22))"
+      filter: "drop-shadow(0 2px 6px rgba(92,64,51,0.22))"
     }
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
     className: "logo-font text-[24px] leading-none track-tighter",
     style: {
-      background: "linear-gradient(135deg,#064E3B,#10B981)",
+      background: "linear-gradient(135deg,#3B2A20,#A4492D)",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent"
     }
@@ -1943,10 +1949,10 @@ function Dashboard({
     className: "flex items-center gap-2"
   }, isAdmin && /*#__PURE__*/React.createElement("button", {
     onClick: onOpenAdmin,
-    className: "text-xs font-bold text-sky-700 px-3 py-2 rounded-full btn track-tight",
+    className: "text-xs font-bold text-[#9A4B2E] px-3 py-2 rounded-full btn track-tight",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      border: "1px solid rgba(43,168,188,0.14)"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      border: "1px solid rgba(177,96,62,0.14)"
     }
   }, "⚙️ 관리자"), /*#__PURE__*/React.createElement("button", {
     onClick: onLogout,
@@ -1968,11 +1974,11 @@ function Dashboard({
     className: "tabular",
     style: {
       fontSize: "13px",
-      color: "#0E6B79"
+      color: "#5C4033"
     }
   }, todayMine), "건"), /*#__PURE__*/React.createElement("span", {
     style: {
-      color: "rgba(14,107,121,0.35)",
+      color: "rgba(92,64,51,0.35)",
       fontWeight: 400
     }
   }, "·"), /*#__PURE__*/React.createElement("span", {
@@ -1981,7 +1987,7 @@ function Dashboard({
     className: "tabular",
     style: {
       fontSize: "13px",
-      color: "#0E6B79"
+      color: "#5C4033"
     }
   }, todayCount), "건"))), showNotice && /*#__PURE__*/React.createElement(NoticeBanner, {
     notice: notice,
@@ -2000,8 +2006,8 @@ function Dashboard({
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-12 h-12 rounded-full flex items-center justify-center font-extrabold text-lg flex-shrink-0",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      color: "#0E6B79"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      color: "#5C4033"
     }
   }, pm.name.charAt(0)), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0 flex-1"
@@ -2009,13 +2015,13 @@ function Dashboard({
     className: "font-extrabold text-slate-900 text-sm track-tight leading-snug"
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      background: "linear-gradient(135deg,#1791A2,#2BA8BC)",
+      background: "linear-gradient(135deg,#96552F,#B1603E)",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent"
     }
   }, pm.name), " ", pm.role, "님, 안녕하세요"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 mt-1 font-medium"
-  }, pm.dept, " · 오늘도 따뜻한 하루 되세요 💙")), temp >= 60 && /*#__PURE__*/React.createElement("div", {
+  }, pm.dept, " · 오늘도 따뜻한 하루 되세요 🧡")), temp >= 60 && /*#__PURE__*/React.createElement("div", {
     className: "flex-shrink-0 flex flex-col items-center justify-center",
     style: {
       animation: "badgeIn .5s cubic-bezier(.34,1.56,.64,1) .3s both"
@@ -2042,13 +2048,13 @@ function Dashboard({
     style: {
       fontSize: "68px",
       lineHeight: 1,
-      background: "linear-gradient(160deg,#0C4A52,#0E6B79,#2BA8BC)",
+      background: "linear-gradient(160deg,#3B2A20,#5C4033,#B1603E)",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
       letterSpacing: "-0.05em"
     }
   }, temp.toFixed(1)), /*#__PURE__*/React.createElement("span", {
-    className: "text-2xl fw800 text-sky-600 ml-0.5"
+    className: "text-2xl fw800 text-[#BC5B33] ml-0.5"
   }, "°C")), /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center"
   }, /*#__PURE__*/React.createElement(Thermometer, {
@@ -2058,8 +2064,8 @@ function Dashboard({
   }, /*#__PURE__*/React.createElement("div", {
     className: `inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-extrabold track-tight ${ri.done ? "text-white" : "chip-g"}`,
     style: ri.done ? {
-      background: "linear-gradient(135deg,#229AA8,#54C5D2)",
-      boxShadow: "0 4px 14px rgba(43,168,188,0.18),inset 0 1px 0 rgba(255,255,255,0.18)"
+      background: "linear-gradient(135deg,#A4492D,#D28B62)",
+      boxShadow: "0 4px 14px rgba(177,96,62,0.18),inset 0 1px 0 rgba(255,255,255,0.18)"
     } : {}
   }, /*#__PURE__*/React.createElement("span", null, ri.icon), /*#__PURE__*/React.createElement("span", null, ri.text))), /*#__PURE__*/React.createElement("div", {
     className: "mt-5 grid grid-cols-3 gap-2"
@@ -2133,32 +2139,32 @@ function Dashboard({
     "aria-label": "감사일기 남기기",
     className: "w-full px-4 py-4 rounded-[20px] btn track-tight flex items-center gap-3",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      border: "1.5px solid rgba(43,168,188,0.45)",
-      boxShadow: "0 2px 4px rgba(43,168,188,0.10),0 8px 20px rgba(43,168,188,0.16)"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      border: "1.5px solid rgba(177,96,62,0.45)",
+      boxShadow: "0 2px 4px rgba(177,96,62,0.10),0 8px 20px rgba(177,96,62,0.16)"
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-2xl flex-shrink-0 bounceY",
     style: {
       animationDelay: "0.6s"
     }
-  }, "🐚"), /*#__PURE__*/React.createElement("div", {
+  }, "🍂"), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 min-w-0 text-left leading-tight"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-extrabold",
     style: {
-      color: "#0C4A52"
+      color: "#3B2A20"
     }
   }, "감사일기 남기기"), /*#__PURE__*/React.createElement("div", {
     className: "text-[10.5px] font-semibold mt-0.5",
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, "이번 달 감사일기 ", diaryStats.monthCount, "번 · 연속 ", diaryStats.streak, "일")), /*#__PURE__*/React.createElement("svg", {
     width: "16",
     height: "16",
     fill: "none",
-    stroke: "#2BA8BC",
+    stroke: "#B1603E",
     strokeWidth: "2.5",
     viewBox: "0 0 24 24",
     className: "flex-shrink-0"
@@ -2181,7 +2187,7 @@ function Dashboard({
     style: {
       background: "rgba(0,0,0,0.12)"
     }
-  }, "마음껏 전해보세요 💙")), /*#__PURE__*/React.createElement("button", {
+  }, "마음껏 전해보세요 🧡")), /*#__PURE__*/React.createElement("button", {
     onClick: handleOpenInbox,
     className: `py-4 rounded-[22px] text-white font-extrabold btn relative track-tight btn-g ${shake ? "btn-shake" : ""}`
   }, /*#__PURE__*/React.createElement("div", {
@@ -2197,9 +2203,9 @@ function Dashboard({
       background: "rgba(0,0,0,0.12)"
     }
   }, unreadCount > 0 ? `새 쪽지 ${unreadCount}개` : `받은 ${inbox.length} · 보낸 ${sent.length}`), unreadCount > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "absolute top-2.5 right-2.5 min-w-[20px] h-5 px-1 rounded-full bg-white text-sky-700 font-extrabold text-xs flex items-center justify-center countPop",
+    className: "absolute top-2.5 right-2.5 min-w-[20px] h-5 px-1 rounded-full bg-white text-[#9A4B2E] font-extrabold text-xs flex items-center justify-center countPop",
     style: {
-      boxShadow: "0 2px 6px rgba(14,91,102,0.25)"
+      boxShadow: "0 2px 6px rgba(78,56,43,0.25)"
     }
   }, unreadCount))), /*#__PURE__*/React.createElement("div", {
     className: "rule-card slideUp",
@@ -2218,11 +2224,11 @@ function Dashboard({
     className: "rule-line"
   }, /*#__PURE__*/React.createElement("span", {
     className: "ico"
-  }, "🐚"), /*#__PURE__*/React.createElement("span", null, "감사일기를 남기면 1일 1°C씩 상승 가능합니다")), /*#__PURE__*/React.createElement("div", {
+  }, "🍂"), /*#__PURE__*/React.createElement("span", null, "감사일기를 남기면 1일 1°C씩 상승 가능합니다")), /*#__PURE__*/React.createElement("div", {
     className: "rule-line"
   }, /*#__PURE__*/React.createElement("span", {
     className: "ico"
-  }, "💙"), /*#__PURE__*/React.createElement("span", null, "같은 분께 중복으로 보내도 서로 하루에 1°C만 올라요")), /*#__PURE__*/React.createElement("div", {
+  }, "🧡"), /*#__PURE__*/React.createElement("span", null, "같은 분께 중복으로 보내도 서로 하루에 1°C만 올라요")), /*#__PURE__*/React.createElement("div", {
     className: "rule-line"
   }, /*#__PURE__*/React.createElement("span", {
     className: "ico"
@@ -2297,8 +2303,8 @@ function ReplyQuote({
   }, /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl p-4",
     style: {
-      background: "linear-gradient(160deg,rgba(234,247,246,0.95),rgba(218,239,240,0.82))",
-      border: "1px solid rgba(43,168,188,0.22)",
+      background: "linear-gradient(160deg,rgba(251,240,220,0.95),rgba(249,228,196,0.82))",
+      border: "1px solid rgba(177,96,62,0.22)",
       boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -2308,12 +2314,12 @@ function ReplyQuote({
   }, "💬"), /*#__PURE__*/React.createElement("span", {
     className: "text-[12px] font-extrabold track-tight",
     style: {
-      color: "#0E6B79"
+      color: "#5C4033"
     }
   }, s.name, "님이 보낸 쪽지"), /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] font-semibold ml-auto tabular",
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, ds)), note.message ? /*#__PURE__*/React.createElement("p", {
     className: "text-[13px] font-semibold leading-relaxed whitespace-pre-wrap track-tight",
@@ -2323,13 +2329,13 @@ function ReplyQuote({
   }, "\"", note.message, "\"") : /*#__PURE__*/React.createElement("p", {
     className: "text-[13px] font-semibold leading-relaxed track-tight",
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
-  }, "🌊 따뜻한 감사의 마음을 보냈어요"), /*#__PURE__*/React.createElement("div", {
+  }, "🍁 따뜻한 감사의 마음을 보냈어요"), /*#__PURE__*/React.createElement("div", {
     className: "mt-2.5 pt-2 text-[11px] font-bold track-tight",
     style: {
-      borderTop: "1px dashed rgba(43,168,188,0.25)",
-      color: "#1791A2"
+      borderTop: "1px dashed rgba(177,96,62,0.25)",
+      color: "#96552F"
     }
   }, "↩︎ 이 쪽지에 답장해요")), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2339,9 +2345,9 @@ function ReplyQuote({
       width: "14px",
       height: "14px",
       transform: "rotate(45deg)",
-      background: "rgba(218,239,240,0.9)",
-      borderRight: "1px solid rgba(43,168,188,0.22)",
-      borderBottom: "1px solid rgba(43,168,188,0.22)"
+      background: "rgba(249,228,196,0.9)",
+      borderRight: "1px solid rgba(177,96,62,0.22)",
+      borderBottom: "1px solid rgba(177,96,62,0.22)"
     }
   }));
 }
@@ -2484,8 +2490,8 @@ function ComposeModal({
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs flex-shrink-0",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      color: "#0E6B79"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      color: "#5C4033"
     }
   }, rp ? rp.name.charAt(0) : ""), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0 text-left flex-1"
@@ -2498,21 +2504,21 @@ function ComposeModal({
   }, rp ? rp.dept : "")), /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] font-extrabold rounded-full px-2 py-0.5 flex-shrink-0 tracking-wider",
     style: {
-      background: "#EAF7F6",
-      color: "#0E6B79"
+      background: "#FAF3E8",
+      color: "#5C4033"
     }
   }, "답장")) : /*#__PURE__*/React.createElement("div", {
     className: "relative"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setROpen(o => !o),
-    className: "ipt w-full px-4 py-3.5 flex items-center justify-between text-sm btn hover:border-sky-300/60"
+    className: "ipt w-full px-4 py-3.5 flex items-center justify-between text-sm btn hover:border-[#E7C6A8]/60"
   }, rp ? /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2.5 min-w-0"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs flex-shrink-0",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      color: "#0E6B79"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      color: "#5C4033"
     }
   }, rp.name.charAt(0)), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0 text-left"
@@ -2566,9 +2572,9 @@ function ComposeModal({
     onClick: () => setOtherFac(f),
     className: "px-3 py-1.5 rounded-full text-[11px] font-bold btn",
     style: otherFac === f ? {
-      background: "linear-gradient(135deg,#54C5D2,#31B2C2)",
+      background: "linear-gradient(135deg,#554036,#3C2C24)",
       color: "#fff",
-      boxShadow: "0 2px 8px rgba(43,168,188,0.2)"
+      boxShadow: "0 2px 8px rgba(177,96,62,0.2)"
     } : {
       background: "#F8FAFC",
       border: "1px solid var(--line)",
@@ -2631,9 +2637,9 @@ function ComposeModal({
     }, t.text), /*#__PURE__*/React.createElement("div", {
       className: `w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300`,
       style: s ? {
-        background: "linear-gradient(135deg,#54C5D2,#31B2C2)",
-        borderColor: "#1791A2",
-        boxShadow: "0 2px 6px rgba(43,168,188,0.16)"
+        background: "linear-gradient(135deg,#554036,#3C2C24)",
+        borderColor: "#96552F",
+        boxShadow: "0 2px 6px rgba(177,96,62,0.16)"
       } : {
         borderColor: "#CBD5E1",
         background: "#fff"
@@ -2664,7 +2670,7 @@ function ComposeModal({
     onClick: send,
     disabled: sending,
     className: "w-full py-4 rounded-2xl btn btn-g text-sm disabled:opacity-60 track-tight"
-  }, "감사 전하기 💙"))), success && /*#__PURE__*/React.createElement(SuccessModal, {
+  }, "감사 전하기 🧡"))), success && /*#__PURE__*/React.createElement(SuccessModal, {
     oldTemp: success.oldTemp,
     newTemp: success.newTemp,
     rose: success.rose,
@@ -2716,21 +2722,21 @@ function SuccessModal({
     }, /*#__PURE__*/React.createElement("div", {
       className: "absolute inset-x-0 top-0 bottom-3 bg-white rounded-full",
       style: {
-        border: "1px solid rgba(43,168,188,0.14)"
+        border: "1px solid rgba(177,96,62,0.14)"
       }
     }), /*#__PURE__*/React.createElement("div", {
       className: "absolute inset-x-1 bottom-3 rounded-full",
       style: {
         height: `${r * 48 + 4}px`,
-        background: "linear-gradient(to top,#2FA1B0,#54C5D2,#8BDAE3)",
+        background: "linear-gradient(to top,#A25638,#D28B62,#EBCDB2)",
         transition: "none"
       }
     }), /*#__PURE__*/React.createElement("div", {
       className: "absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full",
       style: {
-        background: "linear-gradient(135deg,#229AA8,#54C5D2)",
-        boxShadow: "0 2px 6px rgba(14,91,102,0.16)",
-        border: "1px solid rgba(43,168,188,0.5)"
+        background: "linear-gradient(135deg,#A4492D,#D28B62)",
+        boxShadow: "0 2px 6px rgba(78,56,43,0.16)",
+        border: "1px solid rgba(177,96,62,0.5)"
       }
     })), /*#__PURE__*/React.createElement("div", {
       className: "text-left"
@@ -2741,20 +2747,20 @@ function SuccessModal({
       style: {
         fontSize: "44px",
         lineHeight: 1,
-        background: "linear-gradient(160deg,#0C4A52,#1791A2)",
+        background: "linear-gradient(160deg,#3B2A20,#96552F)",
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: "transparent",
         letterSpacing: "-0.04em"
       }
     }, disp.toFixed(1)), /*#__PURE__*/React.createElement("span", {
-      className: "text-xl fw800 text-sky-600"
+      className: "text-xl fw800 text-[#BC5B33]"
     }, "°C")), /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-slate-400 tabular mt-0.5 font-semibold"
     }, "이전 ", oldTemp.toFixed(1), "°C"))), /*#__PURE__*/React.createElement("div", {
       className: "inline-flex items-center gap-1.5 text-white text-xs font-extrabold px-3.5 py-1.5 rounded-full track-tight",
       style: {
-        background: "linear-gradient(135deg,#229AA8,#54C5D2)",
-        boxShadow: "0 3px 10px rgba(43,168,188,0.16)",
+        background: "linear-gradient(135deg,#A4492D,#D28B62)",
+        boxShadow: "0 3px 10px rgba(177,96,62,0.16)",
         animation: "badgeIn .5s cubic-bezier(.34,1.56,.64,1) .9s both"
       }
     }, /*#__PURE__*/React.createElement("span", {
@@ -2773,17 +2779,17 @@ function SuccessModal({
       className: "text-base font-extrabold text-slate-800 track-tight leading-snug mb-1"
     }, "이미 최고 온도 100°C예요!"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm font-semibold text-slate-600 leading-relaxed track-tight"
-    }, "마음의 온도가 가득 찼어요 💙"));
+    }, "마음의 온도가 가득 찼어요 🧡"));
   } else if (reason === "duplicate_recipient") {
     caseUI = /*#__PURE__*/React.createElement("div", {
       className: "px-2"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-3xl mb-2"
-    }, "💙"), /*#__PURE__*/React.createElement("p", {
+    }, "🧡"), /*#__PURE__*/React.createElement("p", {
       className: "text-base font-extrabold text-slate-800 track-tight leading-snug mb-1"
     }, "지금은 온도가 오르지 않아요"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm font-semibold text-slate-600 leading-relaxed track-tight"
-    }, "오늘 이미 이분께 감사를 전하셨네요 💙"));
+    }, "오늘 이미 이분께 감사를 전하셨네요 🧡"));
   } else {
     caseUI = /*#__PURE__*/React.createElement("div", {
       className: "px-2"
@@ -2807,13 +2813,13 @@ function SuccessModal({
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center pulseRing",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)"
     }
   }, /*#__PURE__*/React.createElement("svg", {
     width: "28",
     height: "28",
     fill: "none",
-    stroke: "#0E6B79",
+    stroke: "#5C4033",
     strokeWidth: "3.2",
     viewBox: "0 0 24 24"
   }, /*#__PURE__*/React.createElement("path", {
@@ -2823,8 +2829,8 @@ function SuccessModal({
   }, "감사한 마음을 전했어요"), /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl p-5 mb-4",
     style: {
-      background: "linear-gradient(180deg,#EAF7F6,#EDF7F6)",
-      border: "1px solid rgba(43,168,188,0.18)"
+      background: "linear-gradient(180deg,#FAF3E8,#FAF4EB)",
+      border: "1px solid rgba(177,96,62,0.18)"
     }
   }, caseUI), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2832,22 +2838,22 @@ function SuccessModal({
     }
   }, rose ? /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-slate-600 leading-relaxed track-tight"
-  }, "당신의 소중한 감사 덕에", /*#__PURE__*/React.createElement("br", null), "상대의 마음의 온도도 1도 올라갔습니다 💙") : reason === "temp_maxed" ? /*#__PURE__*/React.createElement("p", {
+  }, "당신의 소중한 감사 덕에", /*#__PURE__*/React.createElement("br", null), "상대의 마음의 온도도 1도 올라갔습니다 🧡") : reason === "temp_maxed" ? /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-slate-600 leading-relaxed track-tight"
-  }, "온도는 더 오르지 않지만", /*#__PURE__*/React.createElement("br", null), "당신의 따뜻한 마음은 변함없이 전달되었어요 💙") : reason === "duplicate_recipient" ? /*#__PURE__*/React.createElement("p", {
+  }, "온도는 더 오르지 않지만", /*#__PURE__*/React.createElement("br", null), "당신의 따뜻한 마음은 변함없이 전달되었어요 🧡") : reason === "duplicate_recipient" ? /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-slate-600 leading-relaxed track-tight"
-  }, "하지만 당신의 따뜻한 마음은", /*#__PURE__*/React.createElement("br", null), "한 번 더 전달되었어요 ⛱️") : /*#__PURE__*/React.createElement("p", {
+  }, "하지만 당신의 따뜻한 마음은", /*#__PURE__*/React.createElement("br", null), "한 번 더 전달되었어요 🍂") : /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-slate-600 leading-relaxed track-tight"
-  }, "하지만 당신의 따뜻한 마음은", /*#__PURE__*/React.createElement("br", null), "변함없이 전달되었어요 💙")), milestone > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "하지만 당신의 따뜻한 마음은", /*#__PURE__*/React.createElement("br", null), "변함없이 전달되었어요 🧡")), milestone > 0 && /*#__PURE__*/React.createElement("div", {
     className: "milestone-card"
   }, /*#__PURE__*/React.createElement("span", {
     className: "milestone-icon"
   }, milestoneIcon), /*#__PURE__*/React.createElement("p", {
-    className: "font-extrabold text-amber-900 text-base mt-2 track-tight"
+    className: "font-extrabold text-[#5C4033] text-base mt-2 track-tight"
   }, "🎉 축하합니다!"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm font-extrabold text-amber-800 mt-0.5 track-tight"
+    className: "text-sm font-extrabold text-[#9A4B2E] mt-0.5 track-tight"
   }, milestoneLabel), /*#__PURE__*/React.createElement("p", {
-    className: "text-[12px] font-medium text-amber-700 mt-2 leading-relaxed"
+    className: "text-[12px] font-medium text-[#BC5B33] mt-2 leading-relaxed"
   }, "따뜻한 밀알인을 응원하기 위해", /*#__PURE__*/React.createElement("br", null), GUD.fac === GU.FACILITIES[0] ? "디아코니아 연구소에서 준비한 '" : "준비된 '", giftWord, "'이(가)", /*#__PURE__*/React.createElement("br", null), "지급될 예정입니다 (1주 내 지급) ", milestoneIcon))));
 }
 function InboxModal({
@@ -2913,9 +2919,9 @@ function InboxModal({
     title: writtenCount === 0 ? "직접 작성한 쪽지가 없어요" : "감사 쪽지를 PDF로 저장",
     className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full btn text-xs font-extrabold track-tight whitespace-nowrap flex-shrink-0 disabled:opacity-40",
     style: {
-      background: "#54C5D2",
+      background: "#D28B62",
       color: "#fff",
-      boxShadow: "0 1px 3px rgba(43,168,188,0.18)"
+      boxShadow: "0 1px 3px rgba(177,96,62,0.18)"
     }
   }, pdfBusy ? /*#__PURE__*/React.createElement("span", {
     className: "sp",
@@ -2956,11 +2962,11 @@ function InboxModal({
     }
   }, "🖨️ ", /*#__PURE__*/React.createElement("b", {
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, "인쇄"), " 화면이 뜨면 ", /*#__PURE__*/React.createElement("b", {
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, "[프린터] → [PDF로 저장]"), "을 눌러주세요")), /*#__PURE__*/React.createElement("div", {
     className: "px-5 pt-4"
@@ -2975,7 +2981,7 @@ function InboxModal({
   }, "📥 받은 쪽지", /*#__PURE__*/React.createElement("span", {
     className: "ml-1 tabular text-[11px] font-extrabold",
     style: {
-      color: tab === "inbox" ? "#2BA8BC" : "#94A3B8"
+      color: tab === "inbox" ? "#B1603E" : "#94A3B8"
     }
   }, inbox.length)), /*#__PURE__*/React.createElement("button", {
     onClick: () => setTab("sent"),
@@ -2983,7 +2989,7 @@ function InboxModal({
   }, "📤 보낸 쪽지", /*#__PURE__*/React.createElement("span", {
     className: "ml-1 tabular text-[11px] font-extrabold",
     style: {
-      color: tab === "sent" ? "#2BA8BC" : "#94A3B8"
+      color: tab === "sent" ? "#B1603E" : "#94A3B8"
     }
   }, sent.length)))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto p-5 space-y-3",
@@ -3018,8 +3024,8 @@ function InboxModal({
     }, /*#__PURE__*/React.createElement("div", {
       className: "w-10 h-10 rounded-full flex items-center justify-center font-extrabold flex-shrink-0",
       style: {
-        background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-        color: "#0E6B79"
+        background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+        color: "#5C4033"
       }
     }, s.name.charAt(0)), /*#__PURE__*/React.createElement("div", {
       className: "min-w-0 flex-1"
@@ -3028,8 +3034,8 @@ function InboxModal({
     }, /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] font-extrabold rounded-full px-1.5 py-0.5 tracking-wider",
       style: {
-        background: tab === "inbox" ? "#EAF7F6" : "#F1F5F9",
-        color: tab === "inbox" ? "#0E6B79" : "#475569"
+        background: tab === "inbox" ? "#FAF3E8" : "#F1F5F9",
+        color: tab === "inbox" ? "#5C4033" : "#475569"
       }
     }, tab === "inbox" ? "FROM" : "TO"), /*#__PURE__*/React.createElement("div", {
       className: "font-extrabold text-slate-900 text-sm truncate track-tight"
@@ -3053,8 +3059,8 @@ function InboxModal({
     }, t.text)))), m.message && /*#__PURE__*/React.createElement("div", {
       className: "rounded-xl p-3.5 mt-2",
       style: {
-        background: "linear-gradient(180deg,#EAF7F6,#EDF7F6)",
-        borderLeft: "3px solid #2BA8BC"
+        background: "linear-gradient(180deg,#FAF3E8,#FAF4EB)",
+        borderLeft: "3px solid #B1603E"
       }
     }, /*#__PURE__*/React.createElement("p", {
       className: "text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap track-tight"
@@ -3062,9 +3068,9 @@ function InboxModal({
       onClick: () => onReply(m),
       className: "w-full mt-3 py-2.5 rounded-xl btn track-tight flex items-center justify-center gap-2 text-[13px] font-extrabold",
       style: {
-        background: "linear-gradient(135deg,#54C5D2,#31B2C2)",
+        background: "linear-gradient(135deg,#554036,#3C2C24)",
         color: "#fff",
-        boxShadow: "0 2px 8px rgba(43,168,188,0.18)"
+        boxShadow: "0 2px 8px rgba(177,96,62,0.18)"
       }
     }, /*#__PURE__*/React.createElement("svg", {
       width: "14",
@@ -3236,7 +3242,7 @@ function DiaryModal({
     className: "flex items-center gap-2.5 min-w-0"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-lg wiggle flex-shrink-0"
-  }, "🐚"), /*#__PURE__*/React.createElement("h2", {
+  }, "🍂"), /*#__PURE__*/React.createElement("h2", {
     className: "font-extrabold text-slate-900 track-tight flex-shrink-0"
   }, "감사 일기"), /*#__PURE__*/React.createElement("button", {
     onClick: handleExportDiary,
@@ -3244,9 +3250,9 @@ function DiaryModal({
     title: entries.length === 0 ? "저장할 감사일기가 없어요" : "감사일기를 PDF로 저장",
     className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full btn text-xs font-extrabold track-tight whitespace-nowrap flex-shrink-0 disabled:opacity-40",
     style: {
-      background: "#54C5D2",
+      background: "#D28B62",
       color: "#fff",
-      boxShadow: "0 1px 3px rgba(43,168,188,0.18)"
+      boxShadow: "0 1px 3px rgba(177,96,62,0.18)"
     }
   }, pdfBusy ? /*#__PURE__*/React.createElement("span", {
     className: "sp",
@@ -3287,11 +3293,11 @@ function DiaryModal({
     }
   }, "🖨️ ", /*#__PURE__*/React.createElement("b", {
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, "인쇄"), " 화면이 뜨면 ", /*#__PURE__*/React.createElement("b", {
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, "[프린터] → [PDF로 저장]"), "을 눌러주세요")), /*#__PURE__*/React.createElement("div", {
     className: "px-5 pt-3"
@@ -3300,16 +3306,16 @@ function DiaryModal({
   }, /*#__PURE__*/React.createElement("span", {
     className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      color: "#0E6B79"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      color: "#5C4033"
     }
-  }, "🌊 이번 달 감사일기 ", monthCount, "번"), /*#__PURE__*/React.createElement("span", {
+  }, "🍂 이번 달 감사일기 ", monthCount, "번"), /*#__PURE__*/React.createElement("span", {
     className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      color: "#0E6B79"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      color: "#5C4033"
     }
-  }, "🐚 연속 일기 ", streak, "일"))), /*#__PURE__*/React.createElement("div", {
+  }, "🍂 연속 일기 ", streak, "일"))), /*#__PURE__*/React.createElement("div", {
     className: "px-5 pt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 p-1 rounded-2xl",
@@ -3332,14 +3338,14 @@ function DiaryModal({
   }, /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl px-4 py-3 text-[13px] font-bold leading-relaxed",
     style: {
-      background: "linear-gradient(135deg,#EAF7F6,#DAEFF0)",
-      border: "1px solid rgba(43,168,188,0.2)",
-      color: "#0E6B79"
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      border: "1px solid rgba(177,96,62,0.2)",
+      color: "#5C4033"
     }
-  }, "감사 일기를 남겨도 마음의 온도가 1도 올라가요 (1일1도) 🌊"), /*#__PURE__*/React.createElement("div", {
+  }, "감사 일기를 남겨도 마음의 온도가 1도 올라가요 (1일1도) 🍁"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 text-[12px] font-extrabold",
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, /*#__PURE__*/React.createElement("span", null, "📆"), /*#__PURE__*/React.createElement("span", null, fmtKor(tKey))), /*#__PURE__*/React.createElement("textarea", {
     value: text,
@@ -3355,14 +3361,14 @@ function DiaryModal({
     className: "w-full py-4 rounded-2xl btn btn-g text-sm disabled:opacity-50 flex items-center justify-center gap-2 track-tight"
   }, saving ? /*#__PURE__*/React.createElement("span", {
     className: "sp"
-  }) : /*#__PURE__*/React.createElement("span", null, "🐚"), /*#__PURE__*/React.createElement("span", null, saving ? "저장 중..." : "감사 일기 쓰기")), justSaved && /*#__PURE__*/React.createElement("div", {
+  }) : /*#__PURE__*/React.createElement("span", null, "🍂"), /*#__PURE__*/React.createElement("span", null, saving ? "저장 중..." : "감사 일기 쓰기")), justSaved && /*#__PURE__*/React.createElement("div", {
     className: "text-center popIn pt-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-4xl mb-1 bounceY"
-  }, "🌊"), /*#__PURE__*/React.createElement("p", {
+  }, "🍂"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-extrabold track-tight",
     style: {
-      color: "#0E6B79"
+      color: "#5C4033"
     }
   }, justSaved.rose ? `감사가 기록됐어요! 온도가 ${justSaved.newTemp.toFixed(1)}°C로 올랐어요` : "감사가 기록됐어요!"), !justSaved.rose && /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] text-slate-400 font-medium mt-0.5"
@@ -3420,28 +3426,28 @@ function DiaryModal({
       className: "rounded-xl flex flex-col items-center justify-center btn",
       style: {
         aspectRatio: "1 / 1",
-        background: isSel ? "linear-gradient(135deg,#54C5D2,#31B2C2)" : has ? "#EAF7F6" : "transparent",
-        border: isToday && !isSel ? "1.5px solid #54C5D2" : "1.5px solid transparent"
+        background: isSel ? "linear-gradient(135deg,#554036,#3C2C24)" : has ? "#FAF3E8" : "transparent",
+        border: isToday && !isSel ? "1.5px solid #D28B62" : "1.5px solid transparent"
       }
     }, /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] font-bold leading-none",
       style: {
-        color: isSel ? "#fff" : has ? "#0E6B79" : "#475569"
+        color: isSel ? "#fff" : has ? "#5C4033" : "#475569"
       }
     }, d), has && /*#__PURE__*/React.createElement("span", {
       className: "leading-none",
       style: {
         fontSize: "20px",
         marginTop: "1px",
-        filter: "drop-shadow(0 1px 2px rgba(43,168,188,0.4))"
+        filter: "drop-shadow(0 1px 2px rgba(177,96,62,0.4))"
       }
-    }, "🐚"));
+    }, "🍂"));
   })), /*#__PURE__*/React.createElement("div", {
     className: "mt-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[12px] font-extrabold mb-2 track-tight",
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, fmtKor(selDate)), selEntries.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl py-6 text-center",
@@ -3451,7 +3457,7 @@ function DiaryModal({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-2xl mb-1"
-  }, "🏖️"), /*#__PURE__*/React.createElement("p", {
+  }, "🍂"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 font-medium"
   }, "이 날은 감사 일기가 없어요")) : /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
@@ -3470,14 +3476,14 @@ function DiaryModal({
     className: "w-full mt-4 py-3 rounded-2xl btn track-tight text-[13px] font-extrabold flex items-center justify-center gap-2",
     style: {
       background: "#fff",
-      border: "1px solid rgba(43,168,188,0.25)",
-      color: "#0E6B79"
+      border: "1px solid rgba(177,96,62,0.25)",
+      color: "#5C4033"
     }
   }, showAll ? "접기 ▲" : `감사 일기 전체보기 (${entries.length}) ▼`), showAll && /*#__PURE__*/React.createElement("div", {
     className: "mt-3 space-y-2 popIn"
   }, allSorted.length === 0 ? /*#__PURE__*/React.createElement("p", {
     className: "text-center text-xs text-slate-400 font-medium py-4"
-  }, "아직 일기가 없어요. 첫 감사를 남겨보세요 🐚") : allSorted.map((e, i) => /*#__PURE__*/React.createElement("div", {
+  }, "아직 일기가 없어요. 첫 감사를 남겨보세요 🍂") : allSorted.map((e, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     className: "rounded-2xl p-3.5",
     style: {
@@ -3488,7 +3494,7 @@ function DiaryModal({
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] font-extrabold mb-1 tabular",
     style: {
-      color: "#1791A2"
+      color: "#96552F"
     }
   }, fmtKor(e.date)), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap track-tight"
@@ -3572,7 +3578,7 @@ function AdminPanel() {
             <span class="text-[11px] font-semibold text-slate-400">${s.rank}</span>
             ${isSuper && fac === "전체" ? html`<span class="fac-badge">${s.fac}</span>` : null}
             ${s.role === 1 ? html`<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded" style=${{ background: "#FEF3C7", color: "#92600A" }}>총괄</span>` : null}
-            ${s.role === 2 ? html`<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded" style=${{ background: "#EAF7F6", color: "#0E6B79" }}>시설 관리자</span>` : null}
+            ${s.role === 2 ? html`<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded" style=${{ background: "#FAF3E8", color: "#5C4033" }}>시설 관리자</span>` : null}
             ${!s.active ? html`<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded" style=${{ background: "#FEE2E2", color: "#B91C1C" }}>비활성</span>` : null}
             ${!s.hasPassword ? html`<span class="text-[9px] font-bold text-slate-300">미가입</span>` : null}
           </div>
@@ -3614,7 +3620,7 @@ function AdminPanel() {
         return html`<div key=${i} title=${(d.date || d.month) + " · " + d.count + "건"} style=${{
           flex: 1, minWidth: "3px",
           height: Math.max(2, d.count / mx * 68) + "px", borderRadius: "3px 3px 0 0",
-          background: d.count ? "linear-gradient(180deg,#54C5D2,#31B2C2)" : "rgba(15,23,42,0.05)"
+          background: d.count ? "linear-gradient(180deg,#D28B62,#BC5B33)" : "rgba(15,23,42,0.05)"
         }}></div>`;
       })}
     </div>`;
@@ -3627,9 +3633,9 @@ function AdminPanel() {
     var st = bundle.stats;
     body = st ? html`<div>
       <div class="grid grid-cols-2 gap-2 mb-3">
-        <div class="admin-stat-card"><div class="text-[10px] font-extrabold text-slate-500">누적 쪽지</div><div class="text-xl fw900 mt-1 tabular" style=${{ color: "#0E6B79" }}>${st.totalAll}건</div></div>
-        <div class="admin-stat-card"><div class="text-[10px] font-extrabold text-slate-500">활성 직원</div><div class="text-xl fw900 mt-1 tabular" style=${{ color: "#0E6B79" }}>${st.totalActive}명</div></div>
-        <div class="admin-stat-card"><div class="text-[10px] font-extrabold text-slate-500">참여자 (36.5°C 초과)</div><div class="text-xl fw900 mt-1 tabular" style=${{ color: "#0E6B79" }}>${st.activeUsers}명</div></div>
+        <div class="admin-stat-card"><div class="text-[10px] font-extrabold text-slate-500">누적 쪽지</div><div class="text-xl fw900 mt-1 tabular" style=${{ color: "#5C4033" }}>${st.totalAll}건</div></div>
+        <div class="admin-stat-card"><div class="text-[10px] font-extrabold text-slate-500">활성 직원</div><div class="text-xl fw900 mt-1 tabular" style=${{ color: "#5C4033" }}>${st.totalActive}명</div></div>
+        <div class="admin-stat-card"><div class="text-[10px] font-extrabold text-slate-500">참여자 (36.5°C 초과)</div><div class="text-xl fw900 mt-1 tabular" style=${{ color: "#5C4033" }}>${st.activeUsers}명</div></div>
         <div class="admin-stat-card"><div class="text-[10px] font-extrabold text-slate-500">온도 분포</div>
           <div class="text-[11px] font-bold mt-1.5 text-slate-600 leading-relaxed">
             60~79° <b class="tabular">${st.tempBuckets.c60}</b> · 80~99° <b class="tabular">${st.tempBuckets.c80}</b> · 100° <b class="tabular">${st.tempBuckets.c100}</b>
@@ -3641,11 +3647,11 @@ function AdminPanel() {
       <div class="grid grid-cols-2 gap-2">
         <div class="admin-card">
           <div class="text-[10.5px] font-extrabold text-slate-500 mb-2">🏆 많이 보낸 분</div>
-          ${st.topSenders.map(function (x, i) { return html`<div key=${i} class="text-[11.5px] font-bold text-slate-700 py-0.5">${i + 1}. ${x.name} <span class="text-slate-400 font-semibold">${x.dept}</span> <span class="tabular" style=${{ color: "#0E6B79" }}>${x.count}</span></div>`; })}
+          ${st.topSenders.map(function (x, i) { return html`<div key=${i} class="text-[11.5px] font-bold text-slate-700 py-0.5">${i + 1}. ${x.name} <span class="text-slate-400 font-semibold">${x.dept}</span> <span class="tabular" style=${{ color: "#5C4033" }}>${x.count}</span></div>`; })}
         </div>
         <div class="admin-card">
           <div class="text-[10.5px] font-extrabold text-slate-500 mb-2">💌 많이 받은 분</div>
-          ${st.topReceivers.map(function (x, i) { return html`<div key=${i} class="text-[11.5px] font-bold text-slate-700 py-0.5">${i + 1}. ${x.name} <span class="text-slate-400 font-semibold">${x.dept}</span> <span class="tabular" style=${{ color: "#0E6B79" }}>${x.count}</span></div>`; })}
+          ${st.topReceivers.map(function (x, i) { return html`<div key=${i} class="text-[11.5px] font-bold text-slate-700 py-0.5">${i + 1}. ${x.name} <span class="text-slate-400 font-semibold">${x.dept}</span> <span class="tabular" style=${{ color: "#5C4033" }}>${x.count}</span></div>`; })}
         </div>
       </div>
     </div>` : html`<p class="text-xs text-slate-400 p-4">통계를 불러오지 못했어요</p>`;
@@ -3655,7 +3661,7 @@ function AdminPanel() {
         <input class="adm-input" placeholder="이름·부서·초성 검색" value=${q} onChange=${function (e) { setQ(e.target.value); }} />
         <button class="adm-btn adm-btn-g flex-shrink-0" onClick=${function () { setShowAdd(!showAdd); }}>➕ 직원 추가</button>
       </div>
-      ${showAdd ? html`<div class="admin-card mb-3" style=${{ border: "1.5px solid rgba(43,168,188,0.3)" }}>
+      ${showAdd ? html`<div class="admin-card mb-3" style=${{ border: "1.5px solid rgba(177,96,62,0.3)" }}>
         <div class="text-[11px] font-extrabold text-slate-600 mb-2">신규 직원 등록 ${isSuper ? "" : "(" + me.fac + ")"}</div>
         <div class="grid grid-cols-2 gap-2">
           ${isSuper ? html`<select class="adm-input col-span-2" value=${addForm.fac} onChange=${function (e) { setAddForm(Object.assign({}, addForm, { fac: e.target.value })); }}>
@@ -3685,7 +3691,7 @@ function AdminPanel() {
           var pend = gf.summary["pending" + lv], tot = gf.summary["total" + lv];
           return html`<div key=${lv} class="admin-stat-card text-center">
             <div class="text-[10px] font-extrabold text-slate-500">${lv}°C</div>
-            <div class="text-base fw900 mt-0.5 tabular" style=${{ color: pend > 0 ? "#B45309" : "#0E6B79" }}>${pend}건 대기</div>
+            <div class="text-base fw900 mt-0.5 tabular" style=${{ color: pend > 0 ? "#96552F" : "#5C4033" }}>${pend}건 대기</div>
             <div class="text-[9px] font-bold text-slate-400 tabular">달성 ${tot}명</div>
           </div>`;
         })}
@@ -3802,7 +3808,7 @@ function NoticeEditor(props) {
     </div>
     <textarea class="adm-input" rows="3" placeholder="공지 내용을 입력해주세요" value=${content} onChange=${function (e) { setContent(e.target.value); }}></textarea>
     ${on && content ? html`<div class="notice-banner mt-2" style=${{ marginBottom: 0 }}>
-      <span class="nico">📢</span><span class="ntext">${props.scope !== "전체" ? html`<b style=${{ color: "#0E6B79" }}>[${props.scope}] </b>` : null}${content}</span>
+      <span class="nico">📢</span><span class="ntext">${props.scope !== "전체" ? html`<b style=${{ color: "#5C4033" }}>[${props.scope}] </b>` : null}${content}</span>
     </div>` : null}
     <button class="adm-btn ${saved ? "adm-btn-w" : "adm-btn-g"} mt-2" onClick=${save}>${saved ? "✅ 저장됨" : "💾 저장"}</button>
   </div>`;
@@ -3814,7 +3820,7 @@ function AdminModal({ onClose }) {
   }, []);
   return React.createElement("div", {
     className: "fixed inset-0 z-[85] fadeIn",
-    style: { background: "linear-gradient(180deg,#F7FCFD,#EDF8FB)", overflowY: "auto" }
+    style: { background: "linear-gradient(180deg,#FFFBF3,#FBF6EF)", overflowY: "auto" }
   }, React.createElement("div", { className: "max-w-md mx-auto px-4 pt-5 pb-10" },
     React.createElement("div", { className: "flex items-center justify-between mb-4" },
       React.createElement("h2", { className: "font-extrabold text-slate-900 text-lg track-tight" }, "⚙️ 관리자 모드"),
