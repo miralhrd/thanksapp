@@ -434,6 +434,33 @@ const groupByDept = list => {
 };
 // ⚡ Twemoji 고정 헬퍼 — 기기 상관없이 동일 렌더. CDN 이미지는 1회 로드 후 캐시(preload로 병렬).
 const TWEMOJI = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/";
+// 📲 바탕화면에 추가 카드 — 이미 설치돼 있으면 표시 안 함
+function InstallCard() {
+  const [st, setSt] = useState(GU.installState());
+  useEffect(() => {
+    const f = () => setSt(GU.installState());
+    window.addEventListener("gu-bip", f);
+    window.addEventListener("appinstalled", f);
+    return () => { window.removeEventListener("gu-bip", f); window.removeEventListener("appinstalled", f); };
+  }, []);
+  if (st === "installed") return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "email-pref-card slideUp mt-3",
+    style: { animationDelay: "0.3s" }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "epi"
+  }, "📲"), /*#__PURE__*/React.createElement("div", {
+    className: "epc"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ept"
+  }, "바탕화면에 추가"), /*#__PURE__*/React.createElement("div", {
+    className: "epd"
+  }, st === "native" ? "버튼 한 번이면 앱처럼 설치돼요" : "홈 화면에 두고 앱처럼 열어요")), /*#__PURE__*/React.createElement("button", {
+    className: "install-btn",
+    onClick: () => GU.requestInstall()
+  }, "추가"));
+}
+
 function Emo({
   code,
   ch,
@@ -476,7 +503,7 @@ function Emo({
 }
 function fireConfetti() {
   const cols = ["#E7C6A8", "#B1603E", "#5C4033", "#F4E6D3", "#D89A73", "#FAF3E8", "#fff"];
-  const emos = ["🧡", "🍁", "✨", "🍂"];
+  const emos = ["🧡", "🍁", "✨", "🍂", "🌰", "🌾"];
   for (let i = 0; i < 55; i++) {
     const e = document.createElement("div");
     e.className = "cbit";
@@ -1413,7 +1440,7 @@ function LoginScreen({
       opacity: 0.42,
       animation: "floatA 5s 0.8s ease-in-out infinite"
     }
-  }, "🍂"), /*#__PURE__*/React.createElement("div", {
+  }, "🌰"), /*#__PURE__*/React.createElement("div", {
     style: {
       position: "relative",
       display: "inline-block",
@@ -2231,7 +2258,7 @@ function Dashboard({
     className: "rule-line"
   }, /*#__PURE__*/React.createElement("span", {
     className: "ico"
-  }, "🍂"), /*#__PURE__*/React.createElement("span", null, "감사일기를 남기면 1일 1°C씩 상승 가능합니다")), /*#__PURE__*/React.createElement("div", {
+  }, "🌾"), /*#__PURE__*/React.createElement("span", null, "감사일기를 남기면 1일 1°C씩 상승 가능합니다")), /*#__PURE__*/React.createElement("div", {
     className: "rule-line"
   }, /*#__PURE__*/React.createElement("span", {
     className: "ico"
@@ -2267,7 +2294,7 @@ function Dashboard({
     "aria-label": emailNotify ? "알림 끄기" : "알림 켜기"
   }, /*#__PURE__*/React.createElement("span", {
     className: "knob"
-  }))), /*#__PURE__*/React.createElement(AppFooter, null), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement(InstallCard, null), /*#__PURE__*/React.createElement(AppFooter, null), /*#__PURE__*/React.createElement("div", {
     className: "ticker-pad"
   }))), /*#__PURE__*/React.createElement(MilestoneTicker, {
     reachers: reachers
@@ -3322,7 +3349,7 @@ function DiaryModal({
       background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
       color: "#5C4033"
     }
-  }, "🍂 연속 일기 ", streak, "일"))), /*#__PURE__*/React.createElement("div", {
+  }, "🌰 연속 일기 ", streak, "일"))), /*#__PURE__*/React.createElement("div", {
     className: "px-5 pt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 p-1 rounded-2xl",

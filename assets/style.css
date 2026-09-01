@@ -333,6 +333,16 @@ body.modal-open{overflow:hidden;}
   opacity:0; animation:a-warmth-drift 30s ease-in-out infinite; will-change:transform,opacity;
 }
 @keyframes a-warmth-drift{0%,100%{opacity:.3;transform:translateX(-3%) scale(1)}50%{opacity:.58;transform:translateX(4%) scale(1.05)}}
+/* 가을 풍경 — 노을빛 언덕 · 억새 (전부 장식 레이어) */
+.season-autumn .a-hill{position:absolute; filter:blur(20px);}
+.season-autumn .a-hill--l{left:-16%; bottom:30px; width:76vw; max-width:920px; height:210px;
+  background:radial-gradient(ellipse 50% 100% at 50% 100%, rgba(198,126,90,0.32), rgba(198,126,90,0) 72%);}
+.season-autumn .a-hill--r{right:-20%; bottom:16px; width:88vw; max-width:1060px; height:240px;
+  background:radial-gradient(ellipse 50% 100% at 50% 100%, rgba(173,99,63,0.30), rgba(173,99,63,0) 74%);}
+.season-autumn .a-grass{position:absolute; bottom:-4px; transform-origin:50% 100%;
+  animation:a-grass-sway var(--gd,6.5s) ease-in-out var(--gdelay,0s) infinite alternate; will-change:transform;}
+.season-autumn .a-grass svg{display:block; width:100%; height:auto;}
+@keyframes a-grass-sway{from{transform:rotate(-2.2deg)}to{transform:rotate(2.6deg)}}
 .season-autumn .a-leaves{position:absolute; inset:0; overflow:hidden;}
 .season-autumn .a-leaves i{
   position:absolute; top:-34px; width:var(--sz,18px); height:var(--sz,18px);
@@ -394,7 +404,7 @@ body.modal-open{overflow:hidden;}
 @media (hover:none){.diary-tip{display:none;}}
 
 @media (prefers-reduced-motion:reduce){
-  .season-autumn .a-sun, .season-autumn .a-warmth,
+  .season-autumn .a-sun, .season-autumn .a-warmth, .season-autumn .a-grass,
   .season-autumn .a-leaves i, .season-autumn .a-sparkles i{animation:none !important;}
   .season-autumn .a-warmth{opacity:.35;}
   .season-autumn .a-leaves i{opacity:0;}
@@ -407,6 +417,8 @@ body.modal-open{overflow:hidden;}
   .rule-card,.email-pref-card{background:linear-gradient(180deg,rgba(255,255,255,0.72),rgba(252,247,238,0.58));}
   .season-autumn .a-sun{top:-110px; right:-84px; width:216px; height:216px;}
   .season-autumn .a-ground{height:104px;}
+  .season-autumn .a-grass--xl{width:76px !important;}
+  .season-autumn .a-grass--lg{width:56px !important;}
   .season-autumn .a-pile{height:62px;}
 }
 
@@ -538,3 +550,9 @@ body.modal-open{overflow:hidden;}
 @media (max-width:480px){
   .card,.card-hero,.glass,.fac-card,.ticker-bar,.land-count{ backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
 }
+
+/* 📲 바탕화면에 추가 버튼 (대시보드 카드) */
+.install-btn{flex-shrink:0;padding:9px 18px;border:none;border-radius:9999px;cursor:pointer;
+  background:linear-gradient(135deg,#554036,#3C2C24);color:#fff;font-weight:800;font-size:12.5px;
+  box-shadow:0 4px 12px rgba(59,42,32,.25);}
+.install-btn:active{transform:scale(.96);}

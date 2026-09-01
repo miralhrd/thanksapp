@@ -189,3 +189,73 @@
     return added;
   };
 })();
+
+/* ---------- 📲 바탕화면(홈 화면)에 추가 ----------
+ * 갤럭시·PC(Chrome·Edge·삼성인터넷): 붙잡아 둔 설치 프롬프트를 띄워 확인 한 번으로 설치.
+ * 아이폰(Safari): 애플이 자동 설치를 막아 둠 → 그림 안내(공유 → 홈 화면에 추가).
+ * 카카오톡 등 인앱 브라우저: 기본 브라우저로 열도록 안내.
+ */
+(function(){
+  var GU = window.GU;
+
+  GU.installState = function(){
+    try{
+      if (window.matchMedia && matchMedia("(display-mode: standalone)").matches) return "installed";
+      if (navigator.standalone) return "installed";   // 아이폰 홈 화면에서 실행 중
+    }catch(e){}
+    if (window.__bip) return "native";
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent || "")) return "ios";
+    return "guide";
+  };
+
+  GU.requestInstall = function(){
+    var st = GU.installState();
+    if (st === "native" && window.__bip){
+      var e = window.__bip; window.__bip = null;
+      try{
+        e.prompt();
+        if (e.userChoice) e.userChoice.then(function(c){ if(!c || c.outcome !== "accepted") window.__bip = e; });
+      }catch(err){ window.__bip = e; showGuide(st); }
+      return;
+    }
+    showGuide(st);
+  };
+
+  function showGuide(st){
+    var ua = navigator.userAgent || "";
+    var title = "📲 바탕화면에 추가하기", steps;
+    if (/KAKAOTALK|NAVER\(inapp|Instagram|FB_IAB|FBAN|Line\//i.test(ua)){
+      title = "먼저 브라우저로 열어주세요";
+      steps = [ "오른쪽 아래 메뉴(⋮ 또는 공유 버튼)를 눌러요",
+                "‘다른 브라우저로 열기’(Safari/Chrome)를 선택해요",
+                "열린 화면에서 이 버튼을 다시 눌러요" ];
+    } else if (st === "ios"){
+      steps = [ "화면 아래 가운데의 공유 버튼을 눌러요  (네모에서 화살표가 나온 모양)",
+                "메뉴를 위로 넘겨 ‘홈 화면에 추가’를 눌러요",
+                "오른쪽 위 ‘추가’를 누르면 끝! 홈 화면에 🍁 아이콘이 생겨요" ];
+    } else {
+      steps = [ "브라우저 오른쪽 위 메뉴(⋮)를 눌러요",
+                "‘홈 화면에 추가’ 또는 ‘앱 설치’를 눌러요",
+                "PC는 주소창 오른쪽 끝의 설치 아이콘을 눌러도 돼요" ];
+    }
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(59,42,32,.45);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(3px);";
+    var rows = "";
+    for (var i=0;i<steps.length;i++){
+      rows += '<div style="display:flex;gap:12px;align-items:flex-start;margin-top:14px;">' +
+        '<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#D28B62,#BC5B33);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;">' + (i+1) + '</div>' +
+        '<div style="font-size:14px;line-height:1.65;color:#3B2A20;font-weight:600;padding-top:2px;">' + steps[i] + '</div></div>';
+    }
+    wrap.innerHTML =
+      '<div style="background:#FFFDF9;border-radius:24px;max-width:340px;width:100%;padding:24px 22px 20px;box-shadow:0 20px 60px rgba(59,42,32,.3);" onclick="event.stopPropagation()">' +
+        '<div style="font-size:17px;font-weight:800;color:#7A3E14;text-align:center;">' + title + '</div>' +
+        '<div style="font-size:12px;color:#9A7B5D;text-align:center;margin-top:4px;">한 번만 추가하면 앱처럼 바로 열 수 있어요</div>' +
+        rows +
+        '<button style="margin-top:20px;width:100%;padding:13px;border:none;border-radius:9999px;background:linear-gradient(135deg,#554036,#3C2C24);color:#fff;font-weight:800;font-size:14px;cursor:pointer;">확인</button>' +
+      '</div>';
+    function close(){ try{ document.body.removeChild(wrap); }catch(e){} }
+    wrap.addEventListener("click", close);
+    wrap.querySelector("button").addEventListener("click", close);
+    document.body.appendChild(wrap);
+  }
+})();
