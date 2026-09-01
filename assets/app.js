@@ -205,6 +205,7 @@ async function populateFromLogin(uid, password, r) {
     d.lastReadTs = Math.max(d.lastReadTs || 0, r.lastReadTs || 0); GUD.data = d;
   } else if (Array.isArray(r.inbox)) {
     // ⚡ 로그인 응답에 쪽지함·일기가 동봉돼 왔으면 그대로 캐시 구성 — 별도 왕복 없음
+    GUD._fresh = true;   // ⚡ 이 응답이 곧 최신 전체 데이터 — 대시보드의 직후 무음 재동기화 불필요
     d = GU.dataCache.fresh();
     d.inbox = r.inbox; d.sent = r.sent || [];
     d.latestTs = r.latestTs || 0; d.lastReadTs = r.lastReadTs || 0;
@@ -221,7 +222,12 @@ async function legacyLoginAndLoad(uid, password) {
   var r;
   if (_pendingLogin && _pendingLogin.uid === uid && _pendingLogin.password === password) {
     r = _pendingLogin.r; _pendingLogin = null;          // 가입 직후 → 서버 왕복 생략
-  } else {
+  } else if (window.__earlyLogin && window.__earlyLogin.uid === uid && window.__earlyLogin.pw === password) {
+    // ⚡ app.html이 선발사한 자동로그인 응답 소비 — 스크립트 로딩과 서버 왕복이 겹쳐 체감 단축
+    var __e = window.__earlyLogin; window.__earlyLogin = null;
+    try { r = await __e.promise; } catch (e) { r = null; }
+  }
+  if (!r) {
     // ⚡ 이 기기에 캐시가 없으면 로그인 한 번에 명단·쪽지함·일기까지 받아옴 (요청 4회 → 1회)
     var hasData = !!GU.dataCache.load(uid);
     r = await GU.api("loginAndLoad", {
@@ -439,7 +445,7 @@ function Emo({
   if (code === "1f3d6") return /*#__PURE__*/React.createElement("span", {
     className: cls,
     style: { display: "inline-flex", alignItems: "center", justifyContent: "center", ...style },
-    dangerouslySetInnerHTML: { __html: window.GU.logoSvg(size) }
+    dangerouslySetInnerHTML: { __html: window.GU.logoSvg(Math.round(size * 1.15)) }
   });
   return /*#__PURE__*/React.createElement("span", {
     className: cls,
@@ -1721,9 +1727,9 @@ function Dashboard({
   const initialLoadRef = useRef(true);
   const handleOpenInboxRef = useRef(null);
 
-  // ⭐ 직원 명단 prefetch 보장 (새로고침으로 로그인 화면 안 거쳐도 최신 명단 확보)
+  // ⭐ 직원 명단 prefetch 보장 — 로그인 응답으로 이미 확보했으면 생략 (요청 1회 절감)
   useEffect(() => {
-    getPrefetch();
+    if (!GUD.rosterReady) getPrefetch();
   }, []);
   useEffect(() => {
     if (initialData && Array.isArray(initialData.inbox)) {
@@ -1814,7 +1820,8 @@ function Dashboard({
   useEffect(() => {
     // ⚡ [속도2] 로그인 응답은 가벼우므로, 대시보드가 뜬 뒤 쪽지/일기/온도를 백그라운드(무음)로 채움
     if (initialData && !initialData._noCache) {
-      load({
+      if (GUD._fresh) { GUD._fresh = false; }   // 방금 서버가 준 최신본 → 요청 1회 절감
+      else load({
         silent: true
       });
     } else {

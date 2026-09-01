@@ -307,29 +307,29 @@ body.modal-open{overflow:hidden;}
 #season-bg{position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; transform:translateZ(0);}
 .season-autumn #season-bg{
   background:linear-gradient(180deg,
-    #FFFBF3 0%, #FFFAF2 20%, #FDF6EC 38%, #FBF2E5 55%, #F4E4CB 68%,
-    #EDCBA6 79%, #E5BD97 87%, #DCB08A 93%, #D9AA83 97%, #D1A078 100%);
+    #FFFBF3 0%, #FFFAF5 20%, #FEF5EF 38%, #FDF1E9 55%, #FAE5D6 68%,
+    #F6D2BC 79%, #F0C3A9 87%, #E9B599 93%, #E5AF92 97%, #DEA588 100%);
 }
 .season-autumn #season-bg::before{
   content:""; position:absolute; inset:0;
   background:
-    radial-gradient(52% 36% at 84% -6%, rgba(255,233,196,0.5), rgba(255,233,196,0) 62%),
-    radial-gradient(72% 30% at 46% 104%, rgba(213,153,108,0.28), rgba(213,153,108,0) 72%);
+    radial-gradient(52% 36% at 84% -6%, rgba(255,236,225,0.5), rgba(255,236,225,0) 62%),
+    radial-gradient(72% 30% at 46% 104%, rgba(227,159,127,0.28), rgba(227,159,127,0) 72%);
 }
 .season-autumn .a-sun{
   position:absolute; top:-98px; right:-64px; width:256px; height:256px; border-radius:50%;
-  background:radial-gradient(circle, rgba(255,242,216,0.85) 0%, rgba(250,219,180,0.42) 40%, rgba(250,219,180,0) 70%);
+  background:radial-gradient(circle, rgba(255,243,232,0.85) 0%, rgba(252,222,204,0.42) 40%, rgba(252,222,204,0) 70%);
   animation:a-sun-breathe 14s ease-in-out infinite; will-change:transform,opacity;
 }
 @keyframes a-sun-breathe{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.06);opacity:.95}}
 .season-autumn .a-dusk{
   position:absolute; left:-12%; right:-12%; bottom:5%; height:34%;
-  background:radial-gradient(ellipse 62% 80% at 50% 88%, rgba(248,168,88,0.3) 0%, rgba(248,168,88,0) 72%);
+  background:radial-gradient(ellipse 62% 80% at 50% 88%, rgba(250,172,118,0.3) 0%, rgba(250,172,118,0) 72%);
   filter:blur(30px);
 }
 .season-autumn .a-warmth{
   position:absolute; left:-22%; width:144%; bottom:11%; height:190px; border-radius:50%;
-  background:radial-gradient(ellipse 56% 100% at 42% 55%, rgba(252,226,190,0.4) 0%, rgba(255,232,196,0.14) 52%, rgba(255,232,196,0) 74%);
+  background:radial-gradient(ellipse 56% 100% at 42% 55%, rgba(253,228,210,0.4) 0%, rgba(255,235,222,0.14) 52%, rgba(255,235,222,0) 74%);
   opacity:0; animation:a-warmth-drift 30s ease-in-out infinite; will-change:transform,opacity;
 }
 @keyframes a-warmth-drift{0%,100%{opacity:.3;transform:translateX(-3%) scale(1)}50%{opacity:.58;transform:translateX(4%) scale(1.05)}}
@@ -364,21 +364,21 @@ body.modal-open{overflow:hidden;}
 .season-autumn .a-ground{
   position:absolute; left:-5%; right:-5%; bottom:-14px; height:132px;
   background:
-    radial-gradient(46% 92% at 10% 100%, rgba(199,146,95,0.4), rgba(199,146,95,0) 70%),
-    radial-gradient(40% 84% at 38% 100%, rgba(193,134,63,0.3), rgba(193,134,63,0) 68%),
-    radial-gradient(44% 96% at 66% 100%, rgba(188,120,73,0.36), rgba(188,120,73,0) 70%),
-    radial-gradient(42% 88% at 92% 100%, rgba(197,137,84,0.34), rgba(197,137,84,0) 70%),
-    linear-gradient(180deg, rgba(224,156,86,0) 0%, rgba(205,152,102,0.24) 62%, rgba(198,140,86,0.44) 100%);
+    radial-gradient(46% 92% at 10% 100%, rgba(207,148,115,0.4), rgba(207,148,115,0) 70%),
+    radial-gradient(40% 84% at 38% 100%, rgba(203,137,95,0.3), rgba(203,137,95,0) 68%),
+    radial-gradient(44% 96% at 66% 100%, rgba(196,124,94,0.36), rgba(196,124,94,0) 70%),
+    radial-gradient(42% 88% at 92% 100%, rgba(206,141,105,0.34), rgba(206,141,105,0) 70%),
+    linear-gradient(180deg, rgba(224,156,86,0) 0%, rgba(213,156,124,0.24) 62%, rgba(207,144,108,0.44) 100%);
   filter:blur(9px);
 }
 .season-autumn .a-pile{
   position:absolute; left:-4%; right:-4%; bottom:-10px; height:78px;
   background:
-    radial-gradient(34% 100% at 6% 100%, rgba(129,84,55,0.5), rgba(129,84,55,0) 72%),
-    radial-gradient(28% 88% at 27% 100%, rgba(154,100,62,0.46), rgba(154,100,62,0) 70%),
-    radial-gradient(32% 96% at 50% 100%, rgba(134,88,57,0.48), rgba(134,88,57,0) 72%),
-    radial-gradient(28% 86% at 72% 100%, rgba(163,99,60,0.44), rgba(163,99,60,0) 70%),
-    radial-gradient(34% 98% at 94% 100%, rgba(137,87,55,0.48), rgba(137,87,55,0) 72%);
+    radial-gradient(34% 100% at 6% 100%, rgba(136,86,66,0.5), rgba(136,86,66,0) 72%),
+    radial-gradient(28% 88% at 27% 100%, rgba(161,103,77,0.46), rgba(161,103,77,0) 70%),
+    radial-gradient(32% 96% at 50% 100%, rgba(141,90,68,0.48), rgba(141,90,68,0) 72%),
+    radial-gradient(28% 86% at 72% 100%, rgba(170,102,75,0.44), rgba(170,102,75,0) 70%),
+    radial-gradient(34% 98% at 94% 100%, rgba(144,89,66,0.48), rgba(144,89,66,0) 72%);
   filter:blur(5px);
 }
 
@@ -533,3 +533,8 @@ body.modal-open{overflow:hidden;}
 /* 시설 카드 · 랜딩 로고 SVG (시즌3 가을 — 이모지 대체) */
 .fac-card .fc-icon svg{width:30px;height:30px;display:block;}
 .bounceY svg{display:inline-block;vertical-align:bottom;}
+
+/* ⚡ 모바일 GPU 부담 완화 — 스크롤 중 배경 blur 재합성 비용 절감 */
+@media (max-width:480px){
+  .card,.card-hero,.glass,.fac-card,.ticker-bar,.land-count{ backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+}
