@@ -1585,7 +1585,8 @@ function LoginScreen({
   }, "🏢 ", GUD.fac || "시설 선택", " · 시설 바꾸기")), /*#__PURE__*/React.createElement("div", {
     className: "card p-7 slideUp relative",
     style: {
-      animationDelay: "0.08s"
+      animationDelay: "0.08s",
+      zIndex: 30            // 이름 드롭다운이 하단 로고 위로 뜨도록(카드를 푸터보다 위 레이어에)
     }
   }, loading && step === "select" && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 rounded-[24px] flex items-center justify-center z-20 glass"
@@ -3676,7 +3677,7 @@ function AdminPanel() {
   function StaffRow(p) {
     var s = p.s;
     var editing = editUid === s.uid;
-    return html`<div class="admin-card mb-2">
+    return html`<div class="admin-card mb-2" key=${s.uid}>
       <div class="flex items-center gap-2 flex-wrap">
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-1.5 flex-wrap">
@@ -3787,7 +3788,7 @@ function AdminPanel() {
         </div>
       </div>` : null}
       <p class="text-[10px] font-bold text-slate-400 mb-2 px-1">${staffFiltered.length}명</p>
-      ${staffFiltered.map(function (s) { return html`<${StaffRow} key=${s.uid} s=${s} />`; })}
+      ${staffFiltered.map(function (s) { return StaffRow({ s: s }); })}
     </div>`;
   } else if (tab === "gifts") {
     var gf = bundle.gifts;
