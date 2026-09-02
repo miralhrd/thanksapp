@@ -9,7 +9,7 @@ window.GU = {
   // ⭐⭐ 반드시 교체: 새 Apps Script 프로젝트를 [배포 → 새 배포 → 웹 앱]으로 배포하면 나오는 /exec 주소.
   //    (아래는 시즌2 옛 백엔드 주소라 이대로 올리면 "새로고침 해주세요"만 뜹니다)
   SHEET_URL: "https://script.google.com/macros/s/AKfycbxDqNAO7DyfPMHw-3qdUPp3DApucXf3r8zIf5HFK7yYLQLzQLu8e4sa3lUg4ouaLd0y/exec",
-  VERSION: "3.6.1",
+  VERSION: "3.6.2",
   FACILITIES: ["밀알복지재단", "송파굿윌스토어", "기빙플러스"],
   PW_PREFIX: "pw",          // 4자리 PIN 앞에 붙여 시트의 숫자 자동변환 방지 (시즌2와 동일)
   CACHE_SCHEMA: 3,          // 로컬 캐시 스키마 버전 — 구조 변경 시 올리면 전체 재동기화

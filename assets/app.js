@@ -17,7 +17,8 @@ var GUD = {
   notices: { global: { active: false, content: "" }, facility: { active: false, content: "" } },
   todayCount: 0, todayMine: 0, reachers: [],
   data: null,                 // {inbox, sent, diary, latestTs, lastReadTs} — uid 기반 원본
-  rosterArr: [], fullByUid: {}, uidByFull: {}, rosterReady: false
+  rosterArr: [], fullByUid: {}, uidByFull: {}, rosterReady: false,
+  adminContact: null            // 로그인 화면 "비번 문의처" (시설별)
 };
 function kstDayLocal(ms) {
   return new Date(Number(ms) + 9 * 3600000).toISOString().slice(0, 10);
@@ -84,6 +85,7 @@ function seedLoginRosterFromCache() {
     var list = [];
     cached.staff.forEach(function (s) { list.push(registerPerson(s.id, GUD.fac, s.dept, s.name, s.rank)); });
     _loginRoster = list;
+    if (cached.contact) GUD.adminContact = cached.contact;
   }
 }
 // 시즌2 getAllStatuses 대응 프리페치 (1회 캐싱)
@@ -99,7 +101,8 @@ function getPrefetch() {
         list.push(full);
       });
       _loginRoster = list;
-      GU.rosterCache.savePublic(GUD.fac, { ver: r.ver, staff: r.staff });
+      if(r.contact) GUD.adminContact = r.contact;
+      GU.rosterCache.savePublic(GUD.fac, { ver: r.ver, staff: r.staff, contact: r.contact || null });
     }
     return st;
   }).catch(function () { return {}; });
@@ -1744,7 +1747,14 @@ function LoginScreen({
       color: "#0A3D45",
       fontWeight: 800
     }
-  }, "교육문화팀(3660)"), "으로 문의해 주세요"), /*#__PURE__*/React.createElement(AppFooter, null)));
+  }, contactLabel()), "으로 문의해 주세요"), /*#__PURE__*/React.createElement(AppFooter, null)));
+}
+// 로그인 화면 "비밀번호 문의처" — 시설별. 밀알=교육문화팀(3660), 그 외=기관 관리자(이름 직급)
+function contactLabel() {
+  var c = GUD.adminContact;
+  if (c && c.org) return c.org;                                   // 밀알복지재단
+  if (c && c.admins && c.admins.length) return "기관 관리자(" + c.admins.join(", ") + ")";  // 관리자 등록됨
+  return "기관 관리자";                                            // 아직 미등록 → 이름 없이
 }
 
 // 🆕 감사 기록 통계(이번 달 횟수·연속 일수) — 백엔드에서 받은 감사일기 배열로 계산 (대시보드 위젯용)
