@@ -336,4 +336,39 @@
       return { ok:true };
     }catch(e){ return { ok:false }; }
   };
+
+  /* 🔔 로그인 후 원탭 알림 켜기 배너 — 브라우저 규칙상 '자동 켜기'는 불가능하므로,
+   * 켤 수 있는 기기에서 한 번만 부드럽게 권유(닫으면 다시 안 뜸). */
+  GU.maybeShowPushBanner = async function(){
+    try{
+      if(localStorage.getItem("gu3.pushAsked")) return;
+      var st = await GU.pushState();
+      if(st !== "off") return;                       // 이미 켰거나, 못 켜는 환경이면 조용히
+      var bar = document.createElement("div");
+      bar.style.cssText = "position:fixed;left:12px;right:12px;bottom:64px;z-index:9998;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:#FFFDF9;box-shadow:0 8px 28px rgba(59,42,32,.28);border:1px solid #EDE0CE;animation:gu-bnr .4s ease;";
+      bar.innerHTML =
+        '<style>@keyframes gu-bnr{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}</style>' +
+        '<span style="font-size:20px;">🔔</span>' +
+        '<span style="flex:1;font-size:12.5px;line-height:1.5;color:#5C4033;font-weight:700;">쪽지가 오면 바로 알려드릴까요?</span>' +
+        '<button id="gu-bnr-on" style="flex-shrink:0;padding:9px 16px;border:none;border-radius:9999px;background:linear-gradient(135deg,#554036,#3C2C24);color:#fff;font-weight:800;font-size:12.5px;cursor:pointer;">알림 켜기</button>' +
+        '<button id="gu-bnr-x" aria-label="닫기" style="flex-shrink:0;width:28px;height:28px;border:none;border-radius:50%;background:#F3EADD;color:#8A6A4B;font-weight:800;cursor:pointer;">✕</button>';
+      function gone(){ try{ localStorage.setItem("gu3.pushAsked", "1"); }catch(e){} try{ document.body.removeChild(bar); }catch(e){} }
+      bar.querySelector("#gu-bnr-x").addEventListener("click", gone);
+      bar.querySelector("#gu-bnr-on").addEventListener("click", async function(){
+        var b = bar.querySelector("#gu-bnr-on");
+        b.disabled = true; b.textContent = "켜는 중…";
+        var r = await GU.pushEnable();
+        gone();
+        if(r && r.ok){
+          var okBar = document.createElement("div");
+          okBar.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:70px;z-index:9998;padding:10px 18px;border-radius:9999px;background:#3C2C24;color:#fff;font-size:12.5px;font-weight:700;box-shadow:0 6px 20px rgba(59,42,32,.3);";
+          okBar.textContent = "🔔 알림이 켜졌어요!";
+          document.body.appendChild(okBar);
+          setTimeout(function(){ try{ document.body.removeChild(okBar); }catch(e){} }, 2500);
+          try{ window.dispatchEvent(new Event("gu-bip")); }catch(e){}
+        }
+      });
+      document.body.appendChild(bar);
+    }catch(e){}
+  };
 })();

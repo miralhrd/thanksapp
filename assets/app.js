@@ -687,7 +687,7 @@ function buildNotesHTML({
         ※ 템플릿은 빠지고, 직접 작성한 감사 쪽지만 담았어요
       </div>
       <div style="break-inside:avoid;page-break-inside:avoid;text-align:center;padding-top:11px;margin-top:9px;border-top:1px solid #E2E8F0;">
-        <div style="font-size:11px;color:#94A3B8;font-weight:700;">밀알복지재단 교육문화팀</div>
+        <img src="assets/foundation-logo.png" alt="밀알복지재단" style="height:15px;display:inline-block;"/>
       </div>
     </div>`;
 }
@@ -761,7 +761,7 @@ function buildDiaryHTML({
       </div>
       ${cards}
       <div style="break-inside:avoid;page-break-inside:avoid;text-align:center;padding-top:11px;margin-top:9px;border-top:1px solid #E2E8F0;">
-        <div style="font-size:11px;color:#94A3B8;font-weight:700;">밀알복지재단 교육문화팀</div>
+        <img src="assets/foundation-logo.png" alt="밀알복지재단" style="height:15px;display:inline-block;"/>
       </div>
     </div>`;
 }
@@ -950,7 +950,11 @@ function AppFooter() {
     style: {
       color: "#3B2A20"
     }
-  }, "밀알복지재단 교육문화팀");
+  }, /*#__PURE__*/React.createElement("img", {
+    src: "assets/foundation-logo.png",
+    alt: "밀알복지재단",
+    style: { height: "20px", display: "inline-block", opacity: 0.92 }
+  }));
 }
 function Thermometer({
   temp
@@ -1810,6 +1814,11 @@ function Dashboard({
   // ⭐ 직원 명단 prefetch 보장 — 로그인 응답으로 이미 확보했으면 생략 (요청 1회 절감)
   useEffect(() => {
     if (!GUD.rosterReady) getPrefetch();
+  }, []);
+  // 🔔 알림 원탭 켜기 배너 (한 번만 권유)
+  useEffect(() => {
+    const t = setTimeout(() => { if (GU.maybeShowPushBanner) GU.maybeShowPushBanner(); }, 1500);
+    return () => clearTimeout(t);
   }, []);
   useEffect(() => {
     if (initialData && Array.isArray(initialData.inbox)) {
