@@ -435,6 +435,59 @@ const groupByDept = list => {
 // ⚡ Twemoji 고정 헬퍼 — 기기 상관없이 동일 렌더. CDN 이미지는 1회 로드 후 캐시(preload로 병렬).
 const TWEMOJI = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/";
 // 📲 바탕화면에 추가 카드 — 이미 설치돼 있으면 표시 안 함
+// 🔔 앱 알림 카드 — 쪽지 받으면 폰 알림 (지원 안 되는 브라우저에선 숨김)
+function NotifyCard() {
+  const [st, setSt] = useState("checking");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    GU.pushState().then(s => { if (alive) setSt(s); });
+    return () => { alive = false; };
+  }, []);
+  if (st === "checking" || st === "unsupported") return null;
+  const click = async () => {
+    if (busy) return;
+    if (st === "need-install") { GU.requestInstall(); return; }   // 아이폰: 먼저 홈 화면에 추가
+    if (st === "denied") {
+      alert("알림이 차단돼 있어요.\n브라우저 설정 → 사이트 설정 → 알림에서 이 앱을 허용해주세요.");
+      return;
+    }
+    setBusy(true);
+    if (st === "on") await GU.pushDisable();
+    else {
+      const r = await GU.pushEnable();
+      if (!r.ok && r.error) console.warn("푸시 등록:", r.error);
+    }
+    setSt(await GU.pushState());
+    setBusy(false);
+  };
+  const desc = st === "need-install" ? "홈 화면에 추가하면 알림을 받을 수 있어요"
+    : st === "denied" ? "알림이 차단돼 있어요 — 눌러서 해제 방법 보기"
+    : "쪽지가 오면 이 기기로 바로 알려드려요";
+  return /*#__PURE__*/React.createElement("div", {
+    className: "email-pref-card slideUp mt-3",
+    style: { animationDelay: "0.28s" }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "epi"
+  }, "🔔"), /*#__PURE__*/React.createElement("div", {
+    className: "epc"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ept"
+  }, "앱 알림"), /*#__PURE__*/React.createElement("div", {
+    className: "epd"
+  }, desc)), (st === "on" || st === "off") ? /*#__PURE__*/React.createElement("button", {
+    className: `toggle-sw ${st === "on" ? "on" : "off"}`,
+    onClick: click,
+    disabled: busy,
+    "aria-label": st === "on" ? "앱 알림 끄기" : "앱 알림 켜기"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "knob"
+  })) : /*#__PURE__*/React.createElement("button", {
+    className: "install-btn",
+    onClick: click
+  }, st === "need-install" ? "방법 보기" : "해제 방법"));
+}
+
 function InstallCard() {
   const [st, setSt] = useState(GU.installState());
   useEffect(() => {
@@ -458,7 +511,7 @@ function InstallCard() {
   }, st === "native" ? "버튼 한 번이면 앱처럼 설치돼요" : "홈 화면에 두고 앱처럼 열어요")), /*#__PURE__*/React.createElement("button", {
     className: "install-btn",
     onClick: () => GU.requestInstall()
-  }, "추가"));
+  }, st === "native" ? "추가" : "방법 보기"));
 }
 
 function Emo({
@@ -2294,7 +2347,7 @@ function Dashboard({
     "aria-label": emailNotify ? "알림 끄기" : "알림 켜기"
   }, /*#__PURE__*/React.createElement("span", {
     className: "knob"
-  }))), /*#__PURE__*/React.createElement(InstallCard, null), /*#__PURE__*/React.createElement(AppFooter, null), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement(NotifyCard, null), /*#__PURE__*/React.createElement(InstallCard, null), /*#__PURE__*/React.createElement(AppFooter, null), /*#__PURE__*/React.createElement("div", {
     className: "ticker-pad"
   }))), /*#__PURE__*/React.createElement(MilestoneTicker, {
     reachers: reachers
