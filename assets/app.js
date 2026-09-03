@@ -91,21 +91,28 @@ function seedLoginRosterFromCache() {
 // 시즌2 getAllStatuses 대응 프리페치 (1회 캐싱)
 var _pf = null;
 function getPrefetch() {
-  if (!_pf) _pf = GU.api("getRoster", { fac: GUD.fac }).then(function (r) {
-    var st = {};
-    if (r && r.ok) {
-      var list = [];
-      (r.staff || []).forEach(function (s) {
-        var full = registerPerson(s.id, GUD.fac, s.dept, s.name, s.rank);
-        st[full] = !!s.joined;
-        list.push(full);
-      });
-      _loginRoster = list;
-      if(r.contact) GUD.adminContact = r.contact;
-      GU.rosterCache.savePublic(GUD.fac, { ver: r.ver, staff: r.staff, contact: r.contact || null });
-    }
-    return st;
-  }).catch(function () { return {}; });
+  if (!_pf) {
+    // ⚡ 로그인 화면 선발사 소비 — app.html이 미리 쏜 명단 요청이 있으면 재사용 (실패 시 일반 요청 폴백)
+    var __er = window.__earlyRoster; window.__earlyRoster = null;
+    var req = (__er && __er.fac === GUD.fac)
+      ? __er.promise.catch(function () { return GU.api("getRoster", { fac: GUD.fac }); })
+      : GU.api("getRoster", { fac: GUD.fac });
+    _pf = req.then(function (r) {
+      var st = {};
+      if (r && r.ok) {
+        var list = [];
+        (r.staff || []).forEach(function (s) {
+          var full = registerPerson(s.id, GUD.fac, s.dept, s.name, s.rank);
+          st[full] = !!s.joined;
+          list.push(full);
+        });
+        _loginRoster = list;
+        if(r.contact) GUD.adminContact = r.contact;
+        GU.rosterCache.savePublic(GUD.fac, { ver: r.ver, staff: r.staff, contact: r.contact || null });
+      }
+      return st;
+    }).catch(function () { return {}; });
+  }
   return _pf;
 }
 
@@ -208,6 +215,8 @@ async function populateFromLogin(uid, password, r) {
   var d = GU.dataCache.load(uid);
   if (d) {
     d.lastReadTs = Math.max(d.lastReadTs || 0, r.lastReadTs || 0); GUD.data = d;
+    // ⚡ 로그인 응답의 전역 latestTs ≤ 캐시 커서 → 직후 무음 getUpdates는 noChange 확정이므로 왕복 생략
+    if ((r.latestTs || 0) <= (d.latestTs || 0)) GUD._fresh = true;
   } else if (Array.isArray(r.inbox)) {
     // ⚡ 로그인 응답에 쪽지함·일기가 동봉돼 왔으면 그대로 캐시 구성 — 별도 왕복 없음
     GUD._fresh = true;   // ⚡ 이 응답이 곧 최신 전체 데이터 — 대시보드의 직후 무음 재동기화 불필요
@@ -429,24 +438,23 @@ const matchStaff = (staff, rawQuery) => {
   if (d.lower.includes(_mqd.lower)) return true;
   return _mqd.cho !== null && d.cho.includes(_mqd.cho);
 };
+// ⚡ 직원 문자열별 파싱 결과를 1회만 계산해 캐시 — 같은 객체를 재사용해 React.memo가 작동
+const _parseCache = new Map();
 const parseS = s => {
-  const [d, n, r] = s.split("-");
-  return {
-    full: s,
-    dept: d,
-    name: n,
-    role: r
-  };
+  let p = _parseCache.get(s);
+  if (!p) {
+    const [d, n, r] = s.split("-");
+    p = { full: s, dept: d, name: n, role: r, _key: s };
+    _parseCache.set(s, p);
+  }
+  return p;
 };
 const groupByDept = list => {
   const g = {};
   list.forEach(s => {
-    const p = parseS(s);
+    const p = parseS(s);   // 캐시된 동일 객체 재사용 → 유지되는 행의 리렌더 생략
     if (!g[p.dept]) g[p.dept] = [];
-    g[p.dept].push({
-      ...p,
-      _key: s
-    });
+    g[p.dept].push(p);
   });
   return g;
 };
@@ -1271,7 +1279,7 @@ function PinInput({
     y2: "22"
   }))));
 }
-function PersonItem({
+const PersonItem = React.memo(function PersonItem({
   person,
   onSelect
 }) {
@@ -1294,7 +1302,7 @@ function PersonItem({
   }, person.role)), person.dept && /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-slate-400 truncate font-medium"
   }, person.dept)));
-}
+});
 function NoticeBanner({
   notice,
   onClose
@@ -1328,6 +1336,7 @@ function NotifyToast({
   const [leaving, setLeaving] = useState(false);
   useEffect(() => {
     if (!toast) return;
+    setLeaving(false);   // 새 토스트마다 불투명 복원 (이전 토스트의 fade-out 잔류 방지)
     const t = setTimeout(() => {
       setLeaving(true);
     }, 4200);
@@ -1389,7 +1398,7 @@ function LoginScreen({
     // eslint-disable-next-line
   }, [search, staffReady]);
   const grouped = useMemo(() => groupByDept(filtered), [filtered]);
-  const handleSelect = async name => {
+  const handleSelect = useCallback(async name => {
     if (loading) return;
     setSel(name);
     setOpen(false);
@@ -1411,7 +1420,7 @@ function LoginScreen({
         if (r && r.ok) setStep(r.isNew ? "pw-new" : "pw-exist");
       }
     } catch (e) {}
-  };
+  }, [loading]);   // ⚡ 참조 고정 → PersonItem memo 유효
   const doSetPw = async () => {
     setErr("");
     if (!/^\d{4}$/.test(pw)) {
@@ -1864,6 +1873,7 @@ function Dashboard({
     }
     // eslint-disable-next-line
   }, []);
+  const closeToast = useCallback(() => setToast(null), []);   // ⚡ 참조 고정 → 토스트 타이머 리셋 방지
   const load = useCallback(async (opts = {}) => {
     if (opts.silent !== true) setLoading(true);
     const r = await apiCall({
@@ -2045,7 +2055,7 @@ function Dashboard({
     visible: loading
   }), /*#__PURE__*/React.createElement(NotifyToast, {
     toast: toast,
-    onClose: () => setToast(null)
+    onClose: closeToast
   }), /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen px-4 pt-5 pb-6"
   }, /*#__PURE__*/React.createElement("div", {
@@ -2493,6 +2503,7 @@ function ComposeModal({
   const [success, setSuccess] = useState(null);
   const [rOpen, setROpen] = useState(false);
   const [rSearch, setRSearch] = useState("");
+  const pickReceiver = useCallback(k => { setRec(k); setROpen(false); setRSearch(""); }, []);   // ⚡ 참조 고정 → PersonItem memo 유효
   // ⭐ 시즌3: 우리 기관 / 타 기관 탭
   const otherFacs = GU.FACILITIES.filter(f => f !== GUD.fac);
   const [facTab, setFacTab] = useState("mine");
@@ -2725,11 +2736,7 @@ function ComposeModal({
   }, dept), members.map(m => /*#__PURE__*/React.createElement(PersonItem, {
     key: m._key,
     person: m,
-    onSelect: k => {
-      setRec(k);
-      setROpen(false);
-      setRSearch("");
-    }
+    onSelect: pickReceiver
   })))), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "p-5 text-sm text-center text-slate-400 font-medium"
   }, "검색 결과가 없어요")))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -2997,6 +3004,9 @@ function InboxModal({
     return () => document.body.classList.remove("modal-open");
   }, []);
   const list = tab === "inbox" ? inbox : sent;
+  // ⚡ 페이지네이션 — 수백 통 쌓여도 모달이 즉시 열리게 처음 80건만 렌더 (PDF 내보내기는 전체 list 그대로)
+  const [visCount, setVisCount] = useState(80);
+  useEffect(() => { setVisCount(80); }, [tab]);
   const writtenCount = list.filter(m => m.message && String(m.message).trim()).length;
   const handleExportPDF = async () => {
     if (pdfBusy) return;
@@ -3130,7 +3140,7 @@ function InboxModal({
     className: "font-extrabold text-slate-700 track-tight"
   }, tab === "inbox" ? "아직 받은 쪽지가 없어요" : "아직 보낸 쪽지가 없어요"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 mt-1.5 font-medium"
-  }, tab === "inbox" ? "먼저 감사를 전해보는 건 어떨까요?" : "오늘의 감사를 누군가에게 전해보세요")) : list.map((m, i) => {
+  }, tab === "inbox" ? "먼저 감사를 전해보는 건 어떨까요?" : "오늘의 감사를 누군가에게 전해보세요")) : list.slice(0, visCount).map((m, i) => {
     const counterpart = tab === "inbox" ? m.from : m.to;
     const s = parseS(counterpart);
     const ts = (m.templates || []).map(id => TMPLS.find(t => t.id === id)).filter(Boolean);
@@ -3143,7 +3153,7 @@ function InboxModal({
         background: "#fff",
         border: "1px solid var(--line-soft)",
         boxShadow: "0 1px 2px rgba(15,23,42,0.03),0 4px 14px rgba(15,23,42,0.03)",
-        animationDelay: `${i * .04}s`
+        animationDelay: `${Math.min(i, 12) * .04}s`
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-3 mb-3"
@@ -3208,7 +3218,16 @@ function InboxModal({
     }, /*#__PURE__*/React.createElement("path", {
       d: "M9 17l-5-5 5-5M4 12h12a4 4 0 0 1 0 8h-1"
     })), "답장하기"));
-  }))));
+  }), list.length > visCount && /*#__PURE__*/React.createElement("button", {
+    key: "more",
+    onClick: () => setVisCount(v => v + 100),
+    className: "w-full py-3 rounded-2xl btn track-tight text-[13px] font-extrabold",
+    style: {
+      background: "#fff",
+      border: "1px solid rgba(177,96,62,0.25)",
+      color: "#5C4033"
+    }
+  }, `더 보기 (${list.length - visCount}개 남음) ▼`))));
 }
 
 // ============================================================
@@ -3659,6 +3678,7 @@ function AdminPanel() {
   var s9 = useState({ fac: isSuper ? GU.FACILITIES[0] : me.fac, dept: "", name: "", rank: "", email: "" }), addForm = s9[0], setAddForm = s9[1];
   var sA = useState(""), confirmAll = sA[0], setConfirmAll = sA[1];
 
+  var facRef = useRef(fac); facRef.current = fac;   // ⚡ 낡은 응답 폐기용 — 시설 빠른 전환 시 데이터 뒤섞임 방지
   async function load(f) {
     setBusy(true);
     var res = await Promise.all([
@@ -3668,6 +3688,7 @@ function AdminPanel() {
       GU.authApi("adminGetRewards"),
       GU.authApi("adminGetNotices")
     ]);
+    if (f !== facRef.current) return;   // 응답 도착 전에 시설이 바뀜 → 폐기
     setBusy(false);
     setBundle({
       stats: res[0].ok ? res[0] : null,
@@ -3695,6 +3716,7 @@ function AdminPanel() {
   };
   async function refreshParts(parts) {
     if (!bundle || !parts) { load(fac); return; }
+    var f = fac;
     setBusy(true);
     var res = await Promise.all(parts.map(function (p) {
       if (p === "stats") return GU.authApi("adminGetStats", { fac: fac });
@@ -3703,6 +3725,7 @@ function AdminPanel() {
       if (p === "rewards") return GU.authApi("adminGetRewards");
       return GU.authApi("adminGetNotices");
     }));
+    if (f !== facRef.current) return;   // ⚡ 낡은 부분 조회는 병합하지 않음
     setBusy(false);
     setBundle(function (prev) {   // 함수형 업데이트 — 부분 조회가 겹쳐도 최신 상태 위에 병합
       var nb = Object.assign({}, prev || bundle);
