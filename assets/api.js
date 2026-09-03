@@ -123,7 +123,7 @@
     loadPublic: function(fac){ return lsGet("gu3.roster.pub." + fac); },
     savePublic: function(fac, data){ lsSet("gu3.roster.pub." + fac, data); },
     loadFull: function(){ return lsGet("gu3.roster.full"); },
-    saveFull: function(data){ lsSet("gu3.roster.full", data); }
+    saveFull: function(data){ lsSet("gu3.roster.full", data); lsSet("gu3.roster.ver", (data && data.ver) || 0); }   // ⚡ 부팅용 버전 마커 동시 기록
   };
   // 전체 명단 확보(버전 일치 시 캐시 사용) → uid→직원 맵과 배열 반환
   GU.ensureRosterFull = async function(serverVer){
@@ -144,11 +144,18 @@
    */
   function dataKey(uid){ return "gu3.data." + uid; }
 
+  var _dcMemo = { uid: null, data: null };   // ⚡ 같은 로그인 흐름의 중복 파싱 제거
   GU.dataCache = {
     load: function(uid){
+      if(_dcMemo.uid === uid && _dcMemo.data) return _dcMemo.data;
       var o = lsGet(dataKey(uid));
-      if(!o || o.schema !== GU.CACHE_SCHEMA) return null;
-      if(!Array.isArray(o.inbox) || !Array.isArray(o.sent) || !Array.isArray(o.diary)) return null;
+      if(!o || o.schema !== GU.CACHE_SCHEMA ||
+         !Array.isArray(o.inbox) || !Array.isArray(o.sent) || !Array.isArray(o.diary)){
+        lsDel("gu3.hasData." + uid);          // 마커 자가치유 — 손상 시 다음 부팅은 전체 동기화
+        return null;
+      }
+      lsSet("gu3.hasData." + uid, GU.CACHE_SCHEMA);   // 기존 사용자 1회 자동 이행
+      _dcMemo = { uid: uid, data: o };
       return o;
     },
     fresh: function(){
@@ -158,15 +165,18 @@
       data.inbox = data.inbox.slice(0, GU.LIST_CACHE_MAX);
       data.sent  = data.sent.slice(0, GU.LIST_CACHE_MAX);
       data.diary = data.diary.slice(0, 400);   // 일기도 상한(용량 보호)
-      if(!lsSet(dataKey(uid), data)){
+      var ok = lsSet(dataKey(uid), data);
+      if(!ok){
         // 용량 초과 → 보관량 절반으로 줄여 재시도
         data.inbox = data.inbox.slice(0, Math.floor(GU.LIST_CACHE_MAX/2));
         data.sent  = data.sent.slice(0, Math.floor(GU.LIST_CACHE_MAX/2));
         data.diary = data.diary.slice(0, 200);
-        lsSet(dataKey(uid), data);
+        ok = lsSet(dataKey(uid), data);
       }
+      if(ok) lsSet("gu3.hasData." + uid, GU.CACHE_SCHEMA); else lsDel("gu3.hasData." + uid);
+      _dcMemo = { uid: uid, data: data };
     },
-    clear: function(uid){ lsDel(dataKey(uid)); }
+    clear: function(uid){ lsDel(dataKey(uid)); lsDel("gu3.hasData." + uid); if(_dcMemo.uid === uid) _dcMemo = { uid:null, data:null }; }
   };
 
   // 신규 쪽지를 캐시에 병합 — (ts|from|to) 복합키로 중복 제거, 최신순 유지

@@ -174,8 +174,10 @@ async function syncRefresh() {
   var r = await GU.authApi("getUpdates", { sinceTs: d.latestTs });
   if (!(r && r.ok)) return { ok: false };
   if (r.resync) { GUD.data = null; return syncRefresh(); }
-  if (typeof r.lastReadTs === "number") d.lastReadTs = Math.max(d.lastReadTs, r.lastReadTs);
+  var changed = false;
+  if (typeof r.lastReadTs === "number" && r.lastReadTs > d.lastReadTs) { d.lastReadTs = r.lastReadTs; changed = true; }
   if (!r.noChange) {
+    changed = true;
     GU.mergeNotes(d, GUD.uid, r.notes || []);
     d.latestTs = r.latestTs;
     if (typeof r.temperature === "number") GUD.temp = r.temperature;
@@ -184,8 +186,8 @@ async function syncRefresh() {
     if (r.todayCounts) { GUD.todayMine = r.todayCounts.mine || 0; GUD.todayCount = Math.max(GUD.todayCount, r.todayCounts.total || 0); }
     if (r.notices) GUD.notices = r.notices;
   }
-  GU.dataCache.save(GUD.uid, d);
-  return { ok: true };
+  if (changed) GU.dataCache.save(GUD.uid, d);   // ⚡ 무변경 폴링이면 전체 직렬화+저장 생략
+  return { ok: true, unchanged: !changed };
 }
 
 async function populateFromLogin(uid, password, r) {
@@ -286,9 +288,11 @@ async function apiCall(p) {
     case "loginAndLoad":
       return legacyLoginAndLoad(uidOfFull(p.name), p.password);
     case "getDashboard": {
-      await syncRefresh();
+      var sy = await syncRefresh();
       if (!GUD.data) return { ok: false, error: "연결이 불안정해요. 잠시 후 다시 시도해주세요." };
-      return dashboardShape();
+      var shape = dashboardShape();
+      if (sy && sy.unchanged) shape._unchanged = true;   // ⚡ 무변경 신호 → 화면 갱신 생략용
+      return shape;
     }
     case "getNotice": {
       var g = GUD.notices.global || { active: false, content: "" };
@@ -402,17 +406,28 @@ const getChosung = str => {
   return out;
 };
 const isOnlyChosung = q => /^[ㄱ-ㅎ\s]+$/.test(q) && q.trim().length > 0;
-const matchStaff = (staff, rawQuery) => {
-  const q = rawQuery.trim();
-  if (!q) return true;
-  const lower = staff.toLowerCase();
-  if (lower.includes(q.toLowerCase())) return true;
-  if (isOnlyChosung(q)) {
-    const staffCho = getChosung(staff);
-    const qCho = q.replace(/\s/g, '');
-    if (staffCho.replace(/\s/g, '').includes(qCho)) return true;
+// ⚡ 직원 문자열별 소문자·초성 파생값을 1회만 계산해 캐시 + 검색어 정규화도 키 입력당 1회
+//    (타이핑 1회마다 직원 전원의 문자열 생성·초성 재분해를 반복하던 것 제거)
+const _staffDeriv = new Map();
+const staffDerivOf = s => {
+  let e = _staffDeriv.get(s);
+  if (!e) {
+    e = { lower: s.toLowerCase(), cho: getChosung(s).replace(/\s/g, '') };
+    _staffDeriv.set(s, e);
   }
-  return false;
+  return e;
+};
+let _mq = null, _mqd = null;
+const matchStaff = (staff, rawQuery) => {
+  if (rawQuery !== _mq) {
+    const q = rawQuery.trim();
+    _mq = rawQuery;
+    _mqd = q ? { lower: q.toLowerCase(), cho: isOnlyChosung(q) ? q.replace(/\s/g, '') : null } : null;
+  }
+  if (!_mqd) return true;
+  const d = staffDerivOf(staff);
+  if (d.lower.includes(_mqd.lower)) return true;
+  return _mqd.cho !== null && d.cho.includes(_mqd.cho);
 };
 const parseS = s => {
   const [d, n, r] = s.split("-");
@@ -1857,6 +1872,10 @@ function Dashboard({
       password: pw
     });
     if (r.ok) {
+      if (r._unchanged && !initialLoadRef.current) {   // ⚡ 무변경 폴링 → setState·전체 리렌더 생략
+        if (opts.silent !== true) setLoading(false);
+        return;
+      }
       setTemp(r.temperature);
       const newInbox = r.inbox || [];
       const newSent = r.sent || [];
@@ -3667,11 +3686,43 @@ function AdminPanel() {
     return qq ? bundle.staff.filter(function (s) { return admMatch(s, qq); }) : bundle.staff;
   }, [bundle, q]);
 
+  // ⚡ 액션별 최소 재조회 — 영향받은 데이터만 다시 받음 (요청 5개 → 1~3개, 미등록 액션은 전체 재조회 폴백)
+  var ACT_DEPS = {
+    adminResetPassword: ["staff"], adminSetRole: ["staff"],
+    adminSetActive: ["staff", "stats"],
+    adminMarkGift: ["gifts"],
+    adminResetTemp: ["staff", "stats", "gifts"]
+  };
+  async function refreshParts(parts) {
+    if (!bundle || !parts) { load(fac); return; }
+    setBusy(true);
+    var res = await Promise.all(parts.map(function (p) {
+      if (p === "stats") return GU.authApi("adminGetStats", { fac: fac });
+      if (p === "staff") return GU.authApi("adminGetStaff", { fac: fac });
+      if (p === "gifts") return GU.authApi("adminGetGifts", { fac: fac });
+      if (p === "rewards") return GU.authApi("adminGetRewards");
+      return GU.authApi("adminGetNotices");
+    }));
+    setBusy(false);
+    setBundle(function (prev) {   // 함수형 업데이트 — 부분 조회가 겹쳐도 최신 상태 위에 병합
+      var nb = Object.assign({}, prev || bundle);
+      parts.forEach(function (p, i) {
+        var r = res[i];
+        if (!r || !r.ok) return;
+        if (p === "stats") nb.stats = r;
+        else if (p === "staff") nb.staff = r.staff;
+        else if (p === "gifts") nb.gifts = r;
+        else if (p === "rewards") nb.rewards = r.rewards;
+        else nb.notices = r.notices;
+      });
+      return nb;
+    });
+  }
   async function act(action, payload, confirmMsg) {
     if (confirmMsg && !window.confirm(confirmMsg)) return;
     var r = await GU.authApi(action, payload);
     if (!r || !r.ok) { alert((r && r.error) || "실패했어요"); return; }
-    refresh();
+    refreshParts(ACT_DEPS[action]);
   }
 
   function StaffRow(p) {
@@ -3713,7 +3764,7 @@ function AdminPanel() {
         <button class="adm-btn adm-btn-g col-span-2" onClick=${async function () {
           var r = await GU.authApi("adminUpdateStaff", Object.assign({ target: s.uid }, editForm));
           if (!r || !r.ok) { alert((r && r.error) || "저장 실패"); return; }
-          setEditUid(null); refresh();
+          setEditUid(null); refreshParts(["staff"]);
         }}>💾 저장</button>
       </div>` : null}
     </div>`;
@@ -3783,7 +3834,7 @@ function AdminPanel() {
             if (!r || !r.ok) { alert((r && r.error) || "등록 실패"); return; }
             alert("등록 완료! (ID " + r.uid + ")");
             setAddForm(Object.assign({}, addForm, { dept: "", name: "", rank: "", email: "" }));
-            setShowAdd(false); refresh();
+            setShowAdd(false); refreshParts(["staff"]);
           }}>등록</button>
         </div>
       </div>` : null}
