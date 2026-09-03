@@ -3,7 +3,7 @@
   "short_name": "감사해U",
   "description": "밀알복지재단 감사 쪽지 앱 — 따뜻한 밀알인 되기 프로젝트",
   "lang": "ko",
-  "start_url": "index.html?src=pwa",
+  "start_url": "app.html?src=pwa",
   "scope": ".",
   "display": "standalone",
   "background_color": "#FFF9F2",

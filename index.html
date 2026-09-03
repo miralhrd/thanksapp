@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>밀알복지재단 감사해U — 시설 선택</title>
 <script>/* ⚡ 재방문은 스타일·폰트 로딩 안 기다리고 즉시 앱으로 */
-try{ if(localStorage.getItem("gu3.auth")) location.replace("app.html?v=3.7.0"); }catch(e){}</script>
+try{ if(localStorage.getItem("gu3.auth")) location.replace("app.html?v=3.7.1"); }catch(e){}</script>
 <link rel="manifest" href="manifest.json"/>
 <meta name="theme-color" content="#BC5B33"/>
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
@@ -22,17 +22,19 @@ if ("serviceWorker" in navigator) {
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="dns-prefetch" href="https://script.google.com"/>
+<!-- ⚡ API 호스트 + 302 리디렉트 목적지 미리 연결 -->
+<link rel="preconnect" href="https://script.google.com" crossorigin/>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin/>
 <!-- 폰트 CSS는 첫 페인트를 막지 않게 비동기 로드 (로드 완료 시 media 전환) -->
 <link rel="stylesheet" media="print" onload="this.media='all'" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
-<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Jua&display=swap"/>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Jua&text=감사해U한마음을전했어요&display=swap"/>
 <noscript>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Jua&text=감사해U한마음을전했어요&display=swap" rel="stylesheet"/>
 </noscript>
-<link rel="stylesheet" href="assets/style.css?v=3.7.0"/>
-<script src="assets/config.js?v=3.7.0" defer></script>
-<script src="assets/api.js?v=3.7.0" defer></script>
+<link rel="stylesheet" href="assets/style.css?v=3.7.1"/>
+<script src="assets/config.js?v=3.7.1" defer></script>
+<script src="assets/api.js?v=3.7.1" defer></script>
 </head>
 <body class="season-autumn">
 

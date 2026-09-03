@@ -4,12 +4,23 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>밀알복지재단 감사해U</title>
-<script src="assets/config.js?v=3.7.0"></script>
+<script src="assets/config.js?v=3.7.1"></script>
 <script>
 /* ⚡ 자동 로그인 선발사 — 스크립트·폰트 로딩과 서버 왕복(1~2초)을 병렬로 진행 */
 (function(){
   try{
-    var raw = localStorage.getItem("gu3.auth"); if(!raw) return;
+    var raw = localStorage.getItem("gu3.auth");
+    if(!raw){
+      /* ⚡ 로그인 화면 선발사 — 시설을 알면 명단(getRoster)도 스크립트 로딩과 병렬로 미리 요청 */
+      var fac = "";
+      try{ var m = location.search.match(/[?&]fac=([^&]*)/); if(m) fac = decodeURIComponent(m[1].replace(/\+/g," ")); }catch(e){}
+      if(!fac){ try{ fac = JSON.parse(localStorage.getItem("gu3.fac") || "null") || ""; }catch(e){} }
+      if(fac && GU.FACILITIES.indexOf(fac) >= 0) window.__earlyRoster = { fac: fac, promise:
+        fetch(GU.SHEET_URL, { method:"POST", mode:"cors", headers:{ "Content-Type":"text/plain;charset=utf-8" },
+          body: JSON.stringify({ action:"getRoster", fac: fac })
+        }).then(function(r){ return r.json(); }) };
+      return;
+    }
     var a = JSON.parse(decodeURIComponent(atob(raw))); if(!a || !a.uid || !a.pw) return;
     var hasData = false, rosterVer = 0;
     /* ⚡ 대형 캐시(수백 KB)를 통째로 파싱하지 않고 작은 마커 키만 읽음 — fetch 발사가 빨라짐 */
@@ -38,21 +49,23 @@ if ("serviceWorker" in navigator) {
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="dns-prefetch" href="https://script.google.com"/>
-<script src="assets/react.min.js?v=3.7.0" defer></script>
-<script src="assets/react-dom.min.js?v=3.7.0" defer></script>
-<script src="assets/htm.js?v=3.7.0" defer></script>
+<!-- ⚡ API 호스트 + 302 리디렉트 목적지 미리 연결 — 세션 첫 응답 100~450ms 단축 -->
+<link rel="preconnect" href="https://script.google.com" crossorigin/>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin/>
+<script src="assets/react.min.js?v=3.7.1" defer></script>
+<script src="assets/react-dom.min.js?v=3.7.1" defer></script>
+<script src="assets/htm.js?v=3.7.1" defer></script>
 <!-- 폰트 CSS는 첫 페인트를 막지 않게 비동기 로드 (로드 완료 시 media 전환) -->
 <link rel="stylesheet" media="print" onload="this.media='all'" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
-<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Jua&display=swap"/>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Jua&text=감사해U한마음을전했어요&display=swap"/>
 <noscript>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Jua&text=감사해U한마음을전했어요&display=swap" rel="stylesheet"/>
 </noscript>
-<link rel="stylesheet" href="assets/tw.css?v=3.7.0"/>
-<link rel="stylesheet" href="assets/style.css?v=3.7.0"/>
-<script src="assets/api.js?v=3.7.0" defer></script>
-<script src="assets/app.js?v=3.7.0" defer></script>
+<link rel="stylesheet" href="assets/tw.css?v=3.7.1"/>
+<link rel="stylesheet" href="assets/style.css?v=3.7.1"/>
+<script src="assets/api.js?v=3.7.1" defer></script>
+<script src="assets/app.js?v=3.7.1" defer></script>
 </head>
 <body class="season-autumn">
 
