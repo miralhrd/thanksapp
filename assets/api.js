@@ -115,7 +115,8 @@
     return raw ? dec(raw) : null;
   };
   GU.clearAuth = function(){ lsDel("gu3.auth"); };
-  GU.savedFac = function(){ return lsGet("gu3.fac"); };
+  // 목록에 없는 시설명(예: 이름 변경 전에 저장된 값)은 무시 → 시설 선택부터 다시
+  GU.savedFac = function(){ var f = lsGet("gu3.fac"); return (f && GU.FACILITIES.indexOf(f) >= 0) ? f : ""; };
   GU.saveFac = function(fac){ lsSet("gu3.fac", fac); };
 
   /* ---------- 명단 캐시 (rosterVersion 기반) ---------- */

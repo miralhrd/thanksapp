@@ -4043,10 +4043,17 @@ function App() {
     var fac = urlFac || GU.savedFac();
     var saved = GU.loadAuth();
     if (!fac && !saved) { location.replace("index.html"); return; }   // 시설 미선택 + 저장 없음 → 랜딩
-    GUD.fac = fac || (saved && saved.fac) || "";
+    // 저장된 로그인 정보의 시설명이 목록에 없으면(시설명 변경 전 저장분) 쓰지 않음 — 로그인 성공 시 서버 값으로 채워짐
+    GUD.fac = fac || ((saved && GU.FACILITIES.indexOf(saved.fac) >= 0) ? saved.fac : "");
     seedLoginRosterFromCache();
     (async function () {
       var r = await tryAutoLogin();
+      if (!r && !GUD.fac) {
+        // 자동 로그인 실패 + 시설 모름(옛 시설명 저장분) → 저장 정보를 지우고 시설 선택부터.
+        // 지우지 않으면 index.html이 로그인 정보를 보고 다시 app.html로 보내 무한 새로고침이 됨
+        GU.clearAuth(); try { localStorage.removeItem("gu3.fac"); } catch (e) {}
+        location.replace("index.html"); return;
+      }
       if (r) {
         setMe(legacyFullOf(GUD.uid));
         setPwS(GUD.pw);
