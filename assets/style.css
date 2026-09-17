@@ -567,3 +567,158 @@ body.modal-open{overflow:hidden;}
     backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
   }
 }
+
+/* ⚡ (3.7.x) 창이 열린 동안의 그리기 부담 줄이기
+   · 폰: 창 뒤 전체 화면 흐림(매 프레임 다시 계산) 대신 조금 더 어둡게 · 로딩 화면·목록 머리글도 흐림 없이 불투명하게
+   · 모든 기기: 창이 열려 있으면 뒤의 계절 배경·하단 달성 티커 움직임을 잠시 멈춤(닫으면 그 자리에서 이어짐) */
+@media (max-width:480px){
+  .glass-overlay{ background:rgba(15,23,42,0.38); backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+  .glass-light{ background:rgba(249,250,251,0.96); backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+  .dept-h{ background:rgba(251,240,220,0.98); backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+}
+body.modal-open #season-bg *,
+body.modal-open .ticker-track{ animation-play-state:paused !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   🍡 추석 이벤트 — 행운의 꿀송편을 찾아라!  (v3.8.0 · 배너 · 20자 안내 · 송편 팝업)
+   밀알복지재단 소속 사용자에게만 표시되며, 이벤트 기간이 끝나면 화면에서 자동으로 사라집니다.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1) 쪽지 작성 화면 상단 이벤트 배너 ── */
+.sp-banner{position:relative;display:flex;align-items:flex-start;gap:11px;padding:12px 13px;border-radius:16px;
+  background:linear-gradient(135deg,#FFF8E8 0%,#FDEBD0 55%,#F8DCB9 100%);
+  border:1.5px dashed rgba(177,96,62,.5);box-shadow:0 4px 14px rgba(177,96,62,.14);overflow:hidden;}
+/* 배너 위를 4.5초마다 한 번 스치는 은은한 광택 — transform 만 움직여(컴포지터 전용) 저사양 기기에서도 버벅이지 않음 */
+.sp-banner::before{content:"";position:absolute;top:-60%;left:-40%;width:34%;height:220%;pointer-events:none;
+  background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.6) 50%,transparent 100%);
+  transform:rotate(14deg) translateX(0);will-change:transform;animation:sp-shine 4.5s ease-in-out infinite;}
+@keyframes sp-shine{0%,55%{transform:rotate(14deg) translateX(0)}100%{transform:rotate(14deg) translateX(500%)}}
+.sp-banner-ico{font-size:27px;line-height:1;flex-shrink:0;margin-top:1px;animation:bounceY 2.2s ease-in-out infinite;}
+.sp-banner-body{flex:1;min-width:0;}
+.sp-banner-title{font-size:13px;font-weight:800;color:#3B2A20;letter-spacing:-.025em;line-height:1.4;}
+.sp-banner-period{font-size:11px;font-weight:700;color:#96552F;letter-spacing:-.01em;white-space:nowrap;}
+.sp-banner-desc{font-size:11.5px;font-weight:700;color:#5C4033;margin-top:6px;line-height:1.5;letter-spacing:-.02em;}
+.sp-banner-sub{font-size:10.5px;font-weight:500;color:#7C5A46;margin-top:2px;line-height:1.5;}
+.sp-banner-chip{flex-shrink:0;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:999px;color:#fff;white-space:nowrap;
+  background:linear-gradient(135deg,#8F3E25,#B05A34);box-shadow:0 2px 6px rgba(143,62,37,.3);}   /* 흰 글씨 대비 4.5:1 이상 */
+.sp-banner-chip.before{background:linear-gradient(135deg,#5A443A,#8B6B5C);}
+.sp-banner-chip.active{animation:countPop 1.8s ease-in-out infinite;}
+
+/* ── 2) 텍스트 영역 아래 20자 안내 ── */
+.sp-hint{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;
+  font-size:11px;font-weight:700;letter-spacing:-.02em;line-height:1.4;animation:msgIn .3s ease-out;}
+.sp-hint.need{color:#96552F;background:rgba(210,139,98,.16);}
+.sp-hint.ok{color:#2F6B3A;background:rgba(72,160,96,.14);}
+
+/* ── 3) 송편 팝업(모달) — 레이아웃은 tw.css 에 의존하지 않도록 전용 클래스로 ── */
+.sp-overlay{position:fixed;inset:0;z-index:96;display:flex;align-items:center;justify-content:center;padding:16px;}
+.sp-overlay.sp-out{animation:sp-fadeOut .3s cubic-bezier(0.22,0.61,0.36,1) forwards;}
+@keyframes sp-fadeOut{to{opacity:0}}
+.sp-card{position:relative;width:100%;max-width:340px;border-radius:28px;padding:28px 24px 24px;text-align:center;}
+.sp-card.sp-card-out{animation:sp-cardOut .3s cubic-bezier(0.22,0.61,0.36,1) forwards;}
+@keyframes sp-cardOut{to{opacity:0;transform:scale(.94) translateY(10px)}}
+.sp-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:#94A3B8;background:transparent;border:0;cursor:pointer;}
+.sp-close:hover{background:rgba(15,23,42,.06);}
+.sp-kicker{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.02em;color:#96552F;
+  background:rgba(210,139,98,.16);padding:3px 10px;border-radius:999px;margin-bottom:8px;}
+.sp-ok{width:100%;padding:14px 0;margin-top:12px;border-radius:16px;font-size:14px;}
+
+/* 송편이 놓인 무대 — 김(흰색)이 잘 보이도록 살짝 어두운 살구빛 배경 */
+.sp-stage{position:relative;height:172px;margin:6px 0 14px;border-radius:22px;overflow:visible;
+  background:radial-gradient(120% 90% at 50% 100%,#E8CDB0 0%,#F3E1CC 55%,#F8ECE0 100%);
+  border:1px solid rgba(177,96,62,.14);}
+/* 나무 쟁반 */
+.sp-plate{position:absolute;left:50%;bottom:16px;width:176px;height:30px;margin-left:-88px;border-radius:50%;
+  background:linear-gradient(180deg,#9C6A4A 0%,#7A4E33 100%);
+  box-shadow:0 10px 18px rgba(78,56,43,.28), inset 0 2px 4px rgba(255,255,255,.28);}
+
+/* ── 김(스팀) 애니메이션 ─────────────────────────────────────────────────
+   구조: .sp-steam 안에 <i> 세 개가 송편 바로 위에 나란히 서 있습니다.
+   각 <i>는 세로로 긴 흰 타원(연기 한 가닥)이며, 위쪽으로 투명해지는 그라데이션과
+   filter:blur(3px) 로 가장자리를 뭉개 진짜 김처럼 보이게 했습니다.
+   움직임(@keyframes sp-steam, 한 사이클 2.8초, 무한 반복):
+     0%   → 송편 표면에서 투명한 상태로 출발 (opacity 0, 세로로 살짝 눌린 scaleY .85)
+     25%  → 조금 올라오면서 가장 선명해짐 (opacity 1)
+     60%  → 계속 상승(-26px)하며 옆으로 4px 흔들리고, 가로로 퍼지기 시작 (scaleX 1.25)
+     100% → 44px 위에서 넓게 퍼지며(scaleX 1.6) 완전히 사라짐 (opacity 0)
+   세 가닥의 animation-delay 를 0s / .9s / 1.7s 로 어긋나게 주어 번갈아 피어오르고,
+   가운데 가닥은 조금 더 길게(52px) 만들어 자연스러운 높낮이 차이를 냈습니다.
+   흰 김이 밝은 배경에서도 보이도록 가장자리에 옅은 갈색 그림자(drop-shadow)를 둘렀습니다.
+   송편을 쪼개면(.sp-steam-off) 김 전체가 0.35초 동안 서서히 사라집니다. */
+.sp-steam{position:absolute;left:50%;bottom:98px;width:84px;height:64px;margin-left:-42px;pointer-events:none;
+  transition:opacity .35s cubic-bezier(0.22,0.61,0.36,1);}
+.sp-steam i{position:absolute;bottom:0;width:18px;height:44px;border-radius:50%;opacity:0;
+  background:linear-gradient(to top,rgba(255,255,255,0) 0%,rgba(255,255,255,1) 45%,rgba(255,255,255,.7) 75%,rgba(255,255,255,0) 100%);
+  filter:blur(3px) drop-shadow(0 0 3px rgba(150,85,47,.35));
+  animation:sp-steam 2.8s ease-in-out infinite;}
+.sp-steam i:nth-child(1){left:14px;animation-delay:0s;}
+.sp-steam i:nth-child(2){left:34px;height:52px;animation-delay:.9s;}
+.sp-steam i:nth-child(3){left:54px;animation-delay:1.7s;}
+.sp-steam.sp-steam-off{opacity:0;}
+@keyframes sp-steam{
+  0%  {opacity:0;   transform:translateY(0)     translateX(0)    scaleX(1)    scaleY(.85);}
+  25% {opacity:1;}
+  60% {opacity:.55; transform:translateY(-26px) translateX(4px)  scaleX(1.25) scaleY(1);}
+  100%{opacity:0;   transform:translateY(-44px) translateX(-3px) scaleX(1.6)  scaleY(1.05);}
+}
+
+/* ── 송편 본체 ──
+   .sp-bun(버튼) 안에 반쪽(.sp-half) 두 개와 속(.sp-fill)이 겹쳐 있습니다.
+   각 반쪽은 overflow:hidden 인 '절반 폭' 상자이고, 그 안의 ::before 가 송편 전체 모양(폭 200%)을
+   그리므로 왼쪽 상자에는 송편의 왼쪽 절반, 오른쪽 상자에는 오른쪽 절반만 보입니다.
+   → .sp-split 이 붙으면 두 상자를 반대 방향으로 밀고 살짝 기울여 '반으로 쪼개지는' 트랜지션이 됩니다. */
+.sp-bun{position:absolute;left:50%;bottom:30px;width:150px;height:96px;margin-left:-75px;
+  background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.sp-bun.sp-split{cursor:default;}
+.sp-bun:focus-visible{outline:3px solid rgba(177,96,62,.45);outline-offset:6px;border-radius:50%;}
+.sp-bun:not(.sp-split){animation:sp-bob 2s ease-in-out infinite;}           /* '눌러보세요' 유도용 살랑거림 */
+@keyframes sp-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.sp-half{position:absolute;top:14px;bottom:0;width:50%;overflow:hidden;
+  transition:transform .7s cubic-bezier(0.34,1.56,0.64,1), filter .4s cubic-bezier(0.22,0.61,0.36,1);}
+.sp-half-l{left:0;transform-origin:100% 100%;}
+.sp-half-r{right:0;transform-origin:0 100%;}
+/* 송편 껍질: 반달 모양(위는 둥글고 아래는 살짝 납작) + 쑥송편 빛 연두 그라데이션 */
+.sp-half::before{content:"";position:absolute;top:0;height:100%;width:200%;
+  border-radius:78px 78px 40px 40px / 80px 80px 28px 28px;
+  background:linear-gradient(165deg,#FBFDF7 0%,#E9F3DE 40%,#D3E6C3 75%,#C2DAB0 100%);
+  box-shadow:inset -8px -10px 16px rgba(110,150,90,.22), inset 5px 7px 12px rgba(255,255,255,.95), 0 6px 10px rgba(78,56,43,.18);}
+.sp-half-l::before{left:0;}
+.sp-half-r::before{right:0;}
+/* 손으로 꼭꼭 눌러 빚은 이음새(점선) */
+.sp-half::after{content:"";position:absolute;top:7px;width:200%;height:64%;
+  border-radius:50% 50% 0 0 / 100% 100% 0 0;border-top:3px dotted rgba(96,128,80,.34);}
+.sp-half-l::after{left:7%;}
+.sp-half-r::after{right:7%;}
+/* 쪼개진 상태: 왼쪽은 왼쪽으로, 오른쪽은 오른쪽으로 벌어지며 바깥으로 살짝 기울어짐 */
+.sp-bun.sp-split .sp-half-l{transform:translateX(-36px) rotate(-16deg);}
+.sp-bun.sp-split .sp-half-r{transform:translateX(36px) rotate(16deg);}
+/* 속(꿀 / 콩): 처음엔 작고 투명 → 쪼개지면 0.2초 뒤 튀어나오듯 커짐 */
+.sp-fill{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;
+  opacity:0;transform:scale(.3);
+  transition:opacity .35s cubic-bezier(0.22,0.61,0.36,1) .2s, transform .6s cubic-bezier(0.34,1.56,0.64,1) .2s;}
+.sp-bun.sp-split .sp-fill{opacity:1;transform:scale(1);}
+.sp-fill-honey{background:radial-gradient(circle at 35% 30%,#FFF3BF 0%,#F8CB4E 45%,#DA931C 100%);
+  box-shadow:0 8px 18px rgba(218,147,28,.45), inset 0 -5px 10px rgba(160,100,10,.35);}
+/* 꿀 한 방울 흘러내리는 디테일 */
+.sp-fill-honey::after{content:"";position:absolute;left:50%;bottom:-14px;width:14px;height:22px;margin-left:-7px;
+  border-radius:7px 7px 12px 12px / 8px 8px 14px 14px;background:linear-gradient(#F3BE3E,#DA931C);}
+.sp-fill-bean{background:radial-gradient(circle at 35% 30%,#C39A73 0%,#8C5C3D 50%,#5E3A22 100%);
+  box-shadow:0 8px 18px rgba(94,58,34,.4), inset 0 -5px 10px rgba(40,20,10,.35);}
+/* 콩 알갱이 디테일 */
+.sp-fill-bean::before,.sp-fill-bean::after{content:"";position:absolute;border-radius:50%;background:rgba(60,34,18,.55);}
+.sp-fill-bean::before{width:12px;height:9px;left:14px;top:18px;transform:rotate(-20deg);}
+.sp-fill-bean::after{width:11px;height:8px;right:12px;bottom:16px;transform:rotate(25deg);}
+
+.sp-title{font-size:20px;font-weight:800;color:#0F172A;margin-bottom:2px;line-height:1.3;letter-spacing:-.03em;}   /* Jua(로고 폰트)는 글자 일부만 내려받는 서브셋이라 본문 폰트로 */
+.sp-msg{font-size:14px;font-weight:700;color:#334155;line-height:1.65;letter-spacing:-.02em;min-height:46px;}
+.sp-msg-in{display:block;animation:msgIn .4s ease-out;}   /* 문구 교체 애니메이션은 안쪽 span 에 — 바깥 p(aria-live)는 유지되어 스크린리더가 결과를 읽어줌 */
+.sp-msg.win{color:#96552F;}
+.sp-tap{font-size:11.5px;font-weight:600;color:#96552F;margin-top:4px;animation:bounceY 1.6s ease-in-out infinite;display:inline-block;}
+
+/* 움직임 최소화 설정 사용자는 김·살랑거림 애니메이션 정지 */
+@media (prefers-reduced-motion:reduce){
+  .sp-steam i,.sp-bun:not(.sp-split),.sp-banner::before,.sp-banner-ico,.sp-banner-chip.active,.sp-tap{animation:none;}
+  .sp-steam i{opacity:.5;}
+}

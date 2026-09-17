@@ -18,7 +18,8 @@ var GUD = {
   todayCount: 0, todayMine: 0, reachers: [],
   data: null,                 // {inbox, sent, diary, latestTs, lastReadTs} — uid 기반 원본
   rosterArr: [], fullByUid: {}, uidByFull: {}, rosterReady: false,
-  adminContact: null            // 로그인 화면 "비번 문의처" (시설별)
+  adminContact: null,           // 로그인 화면 "비번 문의처" (시설별)
+  songpyeon: null               // 🍡 송편 이벤트 진행 정보 (loginAndLoad·getUpdates 응답에서 갱신, 표시용)
 };
 function kstDayLocal(ms) {
   return new Date(Number(ms) + 9 * 3600000).toISOString().slice(0, 10);
@@ -164,6 +165,26 @@ function dashboardShape() {
     noticeGlobal: GUD.notices.global
   };
 }
+// ⚡ 빠른 부팅용 화면 스냅샷 저장 (비밀번호는 넣지 않음)
+function saveSnap() {
+  if (!GUD.uid) return;
+  try {
+    var s = GU.session || {};
+    GU.snapCache.save(GUD.uid, {
+      fac: GUD.fac, temp: GUD.temp, emailNotify: GUD.emailNotify, adminRole: GUD.adminRole,
+      rewards: GUD.rewards, notices: GUD.notices,
+      todayCount: GUD.todayCount, todayMine: GUD.todayMine, day: kstDayLocal(Date.now()),
+      reachers: GUD.reachers || [],
+      me: { fac: s.fac, dept: s.dept, name: s.name, rank: s.rank }
+    });
+  } catch (e) {}
+}
+// 📔 이 기기에 없는 일기가 서버에 있는가 (다른 기기에서 썼거나, 첫 동기화 때 일기만 못 받은 경우)
+function diaryNeedsFetch(d, serverTs) {
+  if (!d) return false;
+  if (d.diaryPending) return true;
+  return typeof serverTs === "number" && serverTs > Math.max(GU.maxDiaryTs(d.diary), d.diaryTsSeen || 0);
+}
 async function syncRefresh() {
   var d = GUD.data;
   if (!d) {
@@ -173,13 +194,16 @@ async function syncRefresh() {
     d = GU.dataCache.fresh();
     d.inbox = res[0].inbox; d.sent = res[0].sent;
     d.latestTs = res[0].latestTs; d.lastReadTs = res[0].lastReadTs || 0;
-    d.diary = (res[1] && res[1].ok) ? res[1].diary : [];
+    if (res[1] && res[1].ok) d.diary = res[1].diary || [];
+    else { d.diary = []; d.diaryPending = true; }   // 일기만 실패 → 빈 일기로 굳히지 않고 다음 동기화 때 다시 받음
     GUD.data = d;
     GU.dataCache.save(GUD.uid, d);
+    saveSnap();
     return { ok: true };
   }
   var r = await GU.authApi("getUpdates", { sinceTs: d.latestTs });
   if (!(r && r.ok)) return { ok: false };
+  try { if (r.songpyeon && typeof r.songpyeon === "object") GUD.songpyeon = Object.assign({}, r.songpyeon, { receivedAtMs: Date.now() }); } catch (e) {}   // 🍡 무변경 응답에도 실려 옴
   if (r.resync) { GUD.data = null; return syncRefresh(); }
   var changed = false;
   if (typeof r.lastReadTs === "number" && r.lastReadTs > d.lastReadTs) { d.lastReadTs = r.lastReadTs; changed = true; }
@@ -193,11 +217,22 @@ async function syncRefresh() {
     if (r.todayCounts) { GUD.todayMine = r.todayCounts.mine || 0; GUD.todayCount = Math.max(GUD.todayCount, r.todayCounts.total || 0); }
     if (r.notices) GUD.notices = r.notices;
   }
-  if (changed) GU.dataCache.save(GUD.uid, d);   // ⚡ 무변경 폴링이면 전체 직렬화+저장 생략
+  // 📔 다른 기기에서 쓴 일기 → 일기만 다시 받아 이 기기 목록과 합침 (서버 값이 이 기기보다 새로울 때만 요청)
+  if (diaryNeedsFetch(d, r.diaryTs)) {
+    var dr = await GU.authApi("getDiary");
+    if (dr && dr.ok) {
+      d.diary = GU.mergeDiary(d.diary, dr.diary || []);
+      delete d.diaryPending;
+      if (typeof r.diaryTs === "number") d.diaryTsSeen = r.diaryTs;   // 같은 신호로 반복 요청하지 않음
+      changed = true;
+    }
+  }
+  if (changed) { GU.dataCache.save(GUD.uid, d); saveSnap(); }   // ⚡ 무변경 폴링이면 전체 직렬화+저장 생략
   return { ok: true, unchanged: !changed };
 }
 
 async function populateFromLogin(uid, password, r) {
+  GUD._fresh = false;   // 이전 로그인에서 남은 신호 초기화
   GUD.uid = uid; GUD.pw = password;
   GUD.fac = (r.me && r.me.fac) || GUD.fac;
   GU.saveFac(GUD.fac);
@@ -210,6 +245,7 @@ async function populateFromLogin(uid, password, r) {
   GUD.todayMine = (r.todayCounts && r.todayCounts.mine) || 0;
   if (r.todayCounts && r.todayCounts.total > GUD.todayCount) GUD.todayCount = r.todayCounts.total;
   GUD.reachers = r.reachers || [];
+  try { if (r.songpyeon && typeof r.songpyeon === "object") GUD.songpyeon = Object.assign({}, r.songpyeon, { receivedAtMs: Date.now() }); } catch (e) {}   // 🍡 송편 이벤트 진행 정보
   GU.session = Object.assign({ uid: uid, pw: password, adminRole: GUD.adminRole }, r.me || {});
   await loadRosterFull(r.rosterVersion, r.rosterFull);
   var d = GU.dataCache.load(uid);
@@ -217,6 +253,8 @@ async function populateFromLogin(uid, password, r) {
     d.lastReadTs = Math.max(d.lastReadTs || 0, r.lastReadTs || 0); GUD.data = d;
     // ⚡ 로그인 응답의 전역 latestTs ≤ 캐시 커서 → 직후 무음 getUpdates는 noChange 확정이므로 왕복 생략
     if ((r.latestTs || 0) <= (d.latestTs || 0)) GUD._fresh = true;
+    // 📔 단, 다른 기기에서 새 일기를 썼다면 생략하지 않음 — 직후 동기화에서 일기를 받아 합침
+    if (diaryNeedsFetch(d, r.diaryTs)) GUD._fresh = false;
   } else if (Array.isArray(r.inbox)) {
     // ⚡ 로그인 응답에 쪽지함·일기가 동봉돼 왔으면 그대로 캐시 구성 — 별도 왕복 없음
     GUD._fresh = true;   // ⚡ 이 응답이 곧 최신 전체 데이터 — 대시보드의 직후 무음 재동기화 불필요
@@ -229,6 +267,7 @@ async function populateFromLogin(uid, password, r) {
   } else {
     GUD.data = null;
   }
+  saveSnap();
 }
 var _pendingLogin = null;   // setPassword 응답에 동봉된 로그인 데이터 (직후 loginAndLoad에서 소비)
 async function legacyLoginAndLoad(uid, password) {
@@ -252,6 +291,10 @@ async function legacyLoginAndLoad(uid, password) {
   }
   if (!r || !r.ok) return r || { ok: false, error: "연결이 불안정해요. 잠시 후 다시 시도해주세요." };
   await populateFromLogin(uid, password, r);
+  return buildLoginShape();
+}
+// 현재 GUD 상태 → 대시보드 첫 화면 데이터 (로그인 직후 · 빠른 부팅 공용)
+function buildLoginShape() {
   var out;
   if (GUD.data) {
     out = dashboardShape();               // 캐시 즉시 표시 → 빈 쪽지함 없음
@@ -266,6 +309,40 @@ async function legacyLoginAndLoad(uid, password) {
   out.todayCount = GUD.todayCount;
   out.todayMine = GUD.todayMine;
   return out;
+}
+/* ⚡ 빠른 부팅 — 저장된 로그인 + 이 기기 캐시(전체 명단 · 쪽지·일기 · 화면 스냅샷)가 모두 있으면
+ *   서버 응답(1~2초)을 기다리지 않고 캐시로 대시보드를 먼저 그림. 하나라도 없으면 null → 기존 경로.
+ *   서버 확인 결과는 대시보드가 받아 반영(비밀번호가 바뀌었으면 로그인 화면으로). */
+function fastBootShape() {
+  try {
+    var saved = GU.loadAuth();
+    if (!(saved && saved.uid && saved.pw)) return null;
+    var uid = Number(saved.uid);
+    var snap = GU.snapCache.load(uid);
+    if (!snap || !snap.fac || GU.FACILITIES.indexOf(snap.fac) < 0) return null;
+    if (GUD.fac && GUD.fac !== snap.fac) return null;             // 다른 시설을 고른 경우 — 기존 경로
+    var ro = GU.rosterCache.loadFull();
+    if (!(ro && Array.isArray(ro.staff) && ro.staff.some(function (s) { return Number(s.id) === uid; }))) return null;
+    var d = GU.dataCache.load(uid);
+    if (!d) return null;
+    GUD.fac = snap.fac;
+    GUD.uid = uid; GUD.pw = saved.pw;
+    GUD.temp = (typeof snap.temp === "number") ? snap.temp : 36.5;
+    GUD.emailNotify = snap.emailNotify !== false;
+    GUD.adminRole = snap.adminRole || 3;
+    if (snap.rewards) GUD.rewards = snap.rewards;
+    if (snap.notices) GUD.notices = snap.notices;
+    var sameDay = snap.day === kstDayLocal(Date.now());            // 날짜가 바뀌었으면 '오늘 쪽지 수'는 0부터
+    GUD.todayCount = sameDay ? (snap.todayCount || 0) : 0;
+    GUD.todayMine = sameDay ? (snap.todayMine || 0) : 0;
+    GUD.reachers = Array.isArray(snap.reachers) ? snap.reachers : [];
+    GU.session = Object.assign({ uid: uid, pw: saved.pw, adminRole: GUD.adminRole }, snap.me || {});
+    GUD.fullByUid = {}; GUD.uidByFull = {};
+    ro.staff.forEach(function (s) { registerPerson(s.id, s.fac, s.dept, s.name, s.rank); });
+    GUD.rosterArr = ro.staff; GUD.rosterReady = true;
+    GUD.data = d;
+    return buildLoginShape();
+  } catch (e) { return null; }
 }
 
 /* ================= 시즌2 호환 apiCall (원본 컴포넌트가 그대로 사용) ================= */
@@ -340,9 +417,10 @@ async function apiCall(p) {
       if (gr && gr.ok) {
         if (typeof gr.newTemp === "number") GUD.temp = gr.newTemp;
         if (GUD.data && gr.entry) {
-          GUD.data.diary = [gr.entry].concat(GUD.data.diary);
+          GUD.data.diary = GU.mergeDiary(GUD.data.diary, [gr.entry]);
           GU.dataCache.save(GUD.uid, GUD.data);
         }
+        saveSnap();
       }
       return gr;
     }
@@ -357,6 +435,86 @@ async function apiCall(p) {
 function apiCallFireForget(p) {
   if (p.action === "sendEmailNotification") {
     GU.fireForget("sendEmailNotification", { to: uidOfFull(p.to) });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 🍡 추석 이벤트 — 행운의 꿀송편을 찾아라!  (v3.8.0 · 프론트 설정 · 공용 헬퍼)
+ *   · 판정(당첨/횟수/수량/기간)은 전부 백엔드 16_Songpyeon.gs 가 하고, 화면은 응답의 songpyeon.show / win 만 믿습니다.
+ *   · 배너·20자 안내는 "밀알복지재단 소속 + 이벤트 기간" 일 때만 보입니다 (다른 시설은 참여 X).
+ *   · 기간 판단은 서버(16_Songpyeon)가 보낸 진행 정보(GUD.songpyeon: 서버 시각 포함)로만 합니다.
+ *     서버 정보가 없으면(16 미배포·비상 중단) 배너·안내를 아예 표시하지 않음 → "백엔드 없이 화면만 뜨는" 일이 없음.
+ *   · 이벤트 코드는 전부 try/catch + SafeBoundary(에러 경계) 안에서 동작 → 오류가 나도 쪽지 전송 UI는 영향 없음.
+ * ═══════════════════════════════════════════════════════════════════════ */
+var SONGPYEON_EVENT = (function () {
+  var c = (GU && GU.SONGPYEON) || {};
+  return {
+    facility: c.facility || (GU.FACILITIES && GU.FACILITIES[0]) || "밀알복지재단",
+    startMs: typeof c.startMs === "number" ? c.startMs : Date.UTC(2026, 8, 21, 8, 0, 0) - 9 * 3600000,
+    endMs: typeof c.endMs === "number" ? c.endMs : Date.UTC(2026, 8, 25, 23, 59, 59, 999) - 9 * 3600000,
+    minChars: c.minChars || 20,
+    title: c.title || "행운의 꿀송편을 찾아라! 🍡",
+    period: c.period || "(이벤트 기간: 9/21 08:00 ~ 9/25)",
+    startText: c.startText || "9/21(월) 08:00",
+    desc: c.desc || "하루 최대 3번 랜덤 송편 뽑기 가능! (1인 1회 당첨 제한)",
+    winText: c.winText || "🎉 축하드립니다! 행운의 꿀송편 당첨!\n커피 한 잔의 여유를 즐기세요!",
+    loseText: c.loseText || "💖 고소한 콩송편이네요!\n따뜻하고 풍성한 한가위 보내세요!"
+  };
+})();
+// 내 소속이 이벤트 대상 시설인가 (밀알복지재단만)
+function songpyeonEligibleFac() {
+  try { return !!GUD.fac && GUD.fac === SONGPYEON_EVENT.facility; } catch (e) { return false; }
+}
+// 현재 이벤트 단계: "before"(시작 전) | "active"(진행 중) | "after"(종료). 판단 불가 시 "after"(전부 숨김)로 안전하게.
+//   info: 서버 진행 정보(GUD.songpyeon, +receivedAtMs). 서버 시각이 있으면 기기 시계 오차를 보정해 판단.
+// 서버 시각 보정된 '지금' — 기기 시계가 틀려도 서버 기준으로 판단
+function songpyeonNow(info) {
+  if (info && typeof info.serverNowMs === "number" && typeof info.receivedAtMs === "number") return info.serverNowMs + (Date.now() - info.receivedAtMs);
+  return Date.now();
+}
+function songpyeonPhase(info) {
+  try {
+    // 서버(16_Songpyeon) 진행 정보가 없음 = 백엔드에 이벤트 없음(16 미배포) 또는 🚨 비상 중단(ENABLED=false) → 전부 숨김
+    if (!info || typeof info !== "object" || info.enabled === false) return "after";
+    const now = songpyeonNow(info);
+    const start = typeof info.startMs === "number" ? info.startMs : SONGPYEON_EVENT.startMs;
+    const end = typeof info.endMs === "number" ? info.endMs : SONGPYEON_EVENT.endMs;
+    if (!(now >= start)) return "before";
+    if (now > end) return "after";
+    return "active";
+  } catch (e) {
+    return "after";
+  }
+}
+// 시작까지 남은 일수(D-day, 서버 시각 기준). 정보 없음·오류 시 null
+//  · 24시간 단위 올림이라 시작 당일 아침(9/21 07:59)에도 D-1 이 되므로, 마지막 24시간은 null → 배너 칩이 "곧 시작!" 으로 표시
+function songpyeonDday(info) {
+  try {
+    if (!info || typeof info !== "object") return null;
+    const start = typeof info.startMs === "number" ? info.startMs : SONGPYEON_EVENT.startMs;
+    const d = Math.ceil((start - songpyeonNow(info)) / 86400000);
+    return d > 1 ? d : null;
+  } catch (e) {
+    return null;
+  }
+}
+// 🛡️ 에러 경계 — 자식(이벤트 UI)에서 렌더 오류가 나면 그 영역만 조용히 비우고, 앱의 나머지는 계속 동작
+class SafeBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { failed: false };
+  }
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(err) {
+    try {
+      console.warn("[송편 이벤트] UI 오류 → 해당 영역만 숨김:", err);
+      if (typeof this.props.onError === "function") this.props.onError(err);
+    } catch (e) {}
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
   }
 }
 const TMPLS = [{
@@ -1595,6 +1753,7 @@ function LoginScreen({
     }
   }, "따뜻한 밀알인 되기 프로젝트"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
+      GU.clearAuth();   // 저장된 로그인 정보가 남아 있으면 index.html이 곧바로 app.html로 되돌려 시설 선택 화면에 못 감
       try { localStorage.removeItem("gu3.fac"); } catch (e) {}
       location.href = "index.html";
     },
@@ -1811,7 +1970,9 @@ function Dashboard({
   onLogout,
   isAdmin,
   onOpenAdmin,
-  initialData
+  initialData,
+  onVerified,
+  onAuthLost
 }) {
   const [loading, setLoading] = useState(!initialData || initialData._noCache === true);
   const [temp, setTemp] = useState(initialData?.temperature || 36.5);
@@ -1840,8 +2001,9 @@ function Dashboard({
   const [diary, setDiary] = useState(initialData?.diary || []); // 🆕 감사일기(백엔드 저장·기기 간 동기화)
   const diaryStats = useMemo(() => diaryStatsOf(diary), [diary]); // 🆕 위젯 통계(백엔드 기록 기반)
   const [replyTo, setReplyTo] = useState(null); // 🆕 답장 대상(받은 쪽지)
+  const [songpyeon, setSongpyeon] = useState(null); // 🍡 송편 이벤트 결과 팝업 {win, key} — null 이면 안 보임
 
-  const [reachers, setReachers] = useState([]); // ⚡ 하단 티커 데이터 (대시보드 응답에 통합)
+  const [reachers, setReachers] = useState((initialData && Array.isArray(initialData.reachers)) ? initialData.reachers : []); // ⚡ 하단 티커 — 캐시 부팅 시 첫 화면부터 표시
   const knownTsRef = useRef(new Set());
   const initialLoadRef = useRef(true);
   const handleOpenInboxRef = useRef(null);
@@ -1856,7 +2018,8 @@ function Dashboard({
     return () => clearTimeout(t);
   }, []);
   useEffect(() => {
-    if (initialData && Array.isArray(initialData.inbox)) {
+    // 빠른 부팅(_verify)이면 새 쪽지 안내는 서버 확인 뒤에 — 다른 기기에서 이미 읽은 쪽지를 '새 쪽지'로 띄우지 않도록
+    if (initialData && Array.isArray(initialData.inbox) && !initialData._verify) {
       (initialData.inbox || []).forEach(m => knownTsRef.current.add(m.ts));
       initialLoadRef.current = false;
       if (initialData.unreadCount > 0) {
@@ -1874,6 +2037,7 @@ function Dashboard({
     // eslint-disable-next-line
   }, []);
   const closeToast = useCallback(() => setToast(null), []);   // ⚡ 참조 고정 → 토스트 타이머 리셋 방지
+  const applyRef = useRef(null);
   const load = useCallback(async (opts = {}) => {
     if (opts.silent !== true) setLoading(true);
     const r = await apiCall({
@@ -1886,6 +2050,13 @@ function Dashboard({
         if (opts.silent !== true) setLoading(false);
         return;
       }
+      applyRef.current(r);
+    }
+    if (opts.silent !== true) setLoading(false);
+  }, [me]);
+  // 서버 데이터(대시보드 모양) → 화면 상태 반영 + 새 쪽지 안내 (폴링 · 빠른 부팅 확인 공용)
+  applyRef.current = r => {
+    {
       setTemp(r.temperature);
       const newInbox = r.inbox || [];
       const newSent = r.sent || [];
@@ -1932,8 +2103,7 @@ function Dashboard({
       if (r.noticeFacility) setFacNotice(r.noticeFacility); // ⭐ 시설별 공지
       if (r.noticeGlobal) setNotice(r.noticeGlobal); // ⭐ 전체 공지 (폴링 응답에 동봉 → 별도 getNotice 호출 불필요)
     }
-    if (opts.silent !== true) setLoading(false);
-  }, [me]);
+  };
   const loadNotice = useCallback(async () => {
     const r = await apiCall({
       action: "getNotice"
@@ -1947,6 +2117,26 @@ function Dashboard({
     }
   }, []);
   useEffect(() => {
+    // ⚡ 빠른 부팅: 캐시로 먼저 그린 화면 — 앱이 미리 보낸 로그인 확인 결과를 받아 반영 (요청 수는 기존과 같음)
+    if (initialData && initialData._verify) {
+      let alive = true;
+      initialData._verify.then(res => {
+        if (!alive) return;
+        if (res && res.ok) {
+          if (typeof onVerified === "function") onVerified(res);
+          if (GUD._fresh) {                    // 이 기기 캐시가 최신 → 로그인 응답 값만 반영
+            GUD._fresh = false;
+            applyRef.current(res);
+          } else {
+            load({ silent: true });             // 새 쪽지·일기가 있으면 받아서 반영
+          }
+        } else if (res && res.badAuth) {
+          if (typeof onAuthLost === "function") onAuthLost();   // 비밀번호 초기화·비활성 → 로그인 화면으로
+        }
+        // 그 밖(연결 문제)은 캐시 화면을 유지 — 다음 폴링에서 다시 확인
+      }).catch(() => {});
+      return () => { alive = false; };
+    }
     // ⚡ [속도2] 로그인 응답은 가벼우므로, 대시보드가 뜬 뒤 쪽지/일기/온도를 백그라운드(무음)로 채움
     if (initialData && !initialData._noCache) {
       if (GUD._fresh) { GUD._fresh = false; }   // 방금 서버가 준 최신본 → 요청 1회 절감
@@ -1992,6 +2182,13 @@ function Dashboard({
         silent: true
       });
     }, 320);
+    // 🍡 송편 팝업 — 기존 전송 마무리 흐름이 모두 실행된 '뒤'에 별도로 띄움. 여기서 오류가 나도 위 로직에는 영향 없음.
+    try {
+      if (payload && payload.songpyeon && typeof payload.songpyeon === "object") {
+        const sp = { win: payload.songpyeon.win === true, key: Date.now() };
+        setTimeout(() => setSongpyeon(sp), 300); // 작성 창이 사라진 뒤 부드럽게 등장
+      }
+    } catch (e) {}
   };
 
   // 🆕 쪽지함에서 답장하기: 받은 쪽지를 들고 쪽지쓰기 창을 연다
@@ -2001,10 +2198,10 @@ function Dashboard({
     setCompose(true);
   };
 
-  // 🆕 감사 기록 저장 후 온도/일기 반영(낙관적 업데이트 — 백엔드에도 이미 저장됨)
+  // 🆕 감사 기록 저장 후 온도/일기 반영 (서버 저장이 확인된 경우에만 호출됨)
   const onGratitudeSaved = payload => {
     if (payload && typeof payload.newTemp === "number") setTemp(payload.newTemp);
-    if (payload && payload.entry) setDiary(prev => [payload.entry, ...prev]);
+    if (payload && payload.entry) setDiary(prev => GU.mergeDiary(prev, [payload.entry]));
   };
   const handleOpenInbox = async () => {
     setIbOpen(true);
@@ -2424,7 +2621,13 @@ function Dashboard({
     initialEntries: diary,
     onClose: () => setDiaryOpen(false),
     onSaved: onGratitudeSaved
-  }));
+  }), songpyeon && /*#__PURE__*/React.createElement(SafeBoundary, {
+    onError: () => setSongpyeon(null)
+  }, /*#__PURE__*/React.createElement(SongpyeonModal, {
+    key: songpyeon.key,
+    win: songpyeon.win,
+    onClose: () => setSongpyeon(null)
+  })));
 }
 
 // 🆕 답장 시 '내가 받은 원본 쪽지'를 보여주는 반투명 물풍선 인용
@@ -2523,6 +2726,7 @@ function ComposeModal({
     return q ? receivers.filter(s => matchStaff(s, q)) : receivers;
   }, [rSearch, receivers]);
   const grouped = useMemo(() => groupByDept(filtered), [filtered]);
+  const spPhase = songpyeonEligibleFac() ? songpyeonPhase(GUD.songpyeon) : "after"; // 🍡 밀알복지재단만 · "before" | "active" | "after" (표시용, 판정은 백엔드)
   const send = async () => {
     setErr("");
     if (!rec) {
@@ -2561,11 +2765,19 @@ function ComposeModal({
       reason: r.reason,
       milestone: r.milestone || 0
     });
+    // 🍡 송편 이벤트 결과 추출 — 응답에 songpyeon 이 없거나 형식이 달라도 예외 없이 처리(그 경우 팝업만 생략, 전송 흐름은 그대로)
+    let songpyeon = null;
+    try {
+      if (r.songpyeon && typeof r.songpyeon === "object" && r.songpyeon.show === true) songpyeon = { win: r.songpyeon.win === true };
+    } catch (e) {
+      songpyeon = null;
+    }
     const closeDelay = r.milestone > 0 ? 5500 : r.rose ? 3400 : 4500;
     setTimeout(() => onSent({
       newTemp: r.myTemp,
       rose: r.rose,
-      reason: r.reason
+      reason: r.reason,
+      songpyeon
     }), closeDelay);
   };
   const rp = rec ? parseS(rec) : null;
@@ -2616,7 +2828,10 @@ function ComposeModal({
     className: "text-xs text-slate-400 mt-1.5 font-medium"
   }, "조금만 기다려 주세요")), /*#__PURE__*/React.createElement("div", {
     className: "p-5 space-y-5"
-  }, replyTo ? /*#__PURE__*/React.createElement(ReplyQuote, {
+  }, /*#__PURE__*/React.createElement(SafeBoundary, null, /*#__PURE__*/React.createElement(SongpyeonBanner, {
+    phase: spPhase,
+    info: GUD.songpyeon
+  })), replyTo ? /*#__PURE__*/React.createElement(ReplyQuote, {
     note: replyTo
   }) : /*#__PURE__*/React.createElement("div", {
     className: "guide-banner"
@@ -2750,8 +2965,13 @@ function ComposeModal({
     className: "ipt w-full px-4 py-3.5 text-slate-700 placeholder-slate-300 resize-none font-semibold text-sm leading-relaxed track-tight",
     rows: 3
   }), /*#__PURE__*/React.createElement("div", {
-    className: "text-right text-[11px] text-slate-300 mt-1 tabular font-semibold"
-  }, msg.length, "/300")), !replyTo && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center justify-between gap-2 mt-1 flex-wrap"
+  }, /*#__PURE__*/React.createElement(SafeBoundary, null, /*#__PURE__*/React.createElement(SongpyeonHint, {
+    phase: spPhase,
+    len: msg.trim().length
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "text-right text-[11px] text-slate-300 tabular font-semibold ml-auto"
+  }, msg.length, "/300"))), !replyTo && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "block text-[11px] font-extrabold text-slate-600 mb-2 tracking-widest uppercase"
   }, "감사 템플릿 ", /*#__PURE__*/React.createElement("span", {
     className: "normal-case tracking-normal font-semibold text-slate-400"
@@ -2810,6 +3030,191 @@ function ComposeModal({
     reason: success.reason,
     milestone: success.milestone
   }));
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// 🍡 송편 이벤트 UI — 배너 / 20자 안내 / 결과 팝업  (v3.8.0)
+//    (모두 SafeBoundary 안에서 렌더되며, 내부 로직도 try/catch 로 감싸 쪽지 전송 UI에 영향을 주지 않음)
+// ═══════════════════════════════════════════════════════════════════════
+
+// 쪽지 작성 화면 상단 배너 — 시작 전(D-day)·진행 중 표시, 이벤트 종료 후엔 자동으로 숨김
+function SongpyeonBanner({
+  phase,
+  info
+}) {
+  if (phase === "after") return null;
+  const h = React.createElement;
+  const dday = phase === "before" ? songpyeonDday(info) : null;
+  const chip = phase === "active" ? "진행 중 🔥" : dday ? `D-${dday}` : "곧 시작!";
+  return h("div", {
+    className: "sp-banner popIn",
+    role: "note",
+    "aria-label": "송편 이벤트 안내"
+  }, h("div", {
+    className: "sp-banner-ico",
+    "aria-hidden": "true"
+  }, "🍡"), h("div", {
+    className: "sp-banner-body"
+  }, h("div", {
+    className: "sp-banner-title"
+  }, SONGPYEON_EVENT.title, " ", h("span", {
+    className: "sp-banner-period"
+  }, SONGPYEON_EVENT.period)), h("div", {
+    className: "sp-banner-desc"
+  }, SONGPYEON_EVENT.desc), h("div", {
+    className: "sp-banner-sub"
+  }, phase === "before" ? `${SONGPYEON_EVENT.startText} 시작! 그때부터 쪽지를 ${SONGPYEON_EVENT.minChars}자 이상 직접 작성해 보내면 갓 찐 송편이 나와요 ☕` : h(React.Fragment, null, `쪽지를 ${SONGPYEON_EVENT.minChars}자 이상 직접 작성해 보내면 갓 찐 송편이 나와요`, h("br", null), "꿀송편을 찾아 커피 한 잔의 여유를! ☕"))), h("span", {
+    className: `sp-banner-chip ${phase}`
+  }, chip));
+}
+
+// 텍스트 영역 아래 20자 안내 — 이벤트 진행 중에만 표시 (20자 미만이어도 쪽지 전송 자체는 정상 진행)
+function SongpyeonHint({
+  phase,
+  len
+}) {
+  if (phase !== "active") return null;
+  const h = React.createElement;
+  const min = SONGPYEON_EVENT.minChars;
+  const n = Number(len) || 0;
+  if (n >= min) return h("div", {
+    className: "sp-hint ok",
+    role: "status"
+  }, "🍡 송편 뽑기 조건 충족! 전송하면 송편이 나와요");
+  // 20자 미만: 안내 문구는 요구사항 그대로 한 덩어리로 노출. 아이콘·글자수는 장식이라 스크린리더에서 제외
+  return h("div", {
+    className: "sp-hint need"
+  }, h("span", {
+    "aria-hidden": "true"
+  }, "🍡 "), `송편 이벤트를 위해 ${min}자 이상 작성해 주세요!`, h("span", {
+    className: "tabular",
+    "aria-hidden": "true"
+  }, " (", n, "/", min, ")"));
+}
+
+// 결과 팝업 — 김이 모락모락 나는 송편을 누르면 반으로 갈라지며 결과 공개 (win: 백엔드 응답의 songpyeon.win)
+function SongpyeonModal({
+  win,
+  onClose
+}) {
+  const [revealed, setRevealed] = useState(false); // 송편을 눌러 결과를 공개했는지
+  const [closing, setClosing] = useState(false); // 닫힘 애니메이션 진행 중 — 공개 여부와 독립(X로 닫을 때 결과가 스쳐 보이지 않게)
+  const closingRef = useRef(false);
+  const bunRef = useRef(null);
+  const okRef = useRef(null);
+  const isWin = win === true;
+  const close = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    setTimeout(() => {
+      try {
+        onClose();
+      } catch (e) {}
+    }, 300); // 닫힘 애니메이션(.sp-out / .sp-card-out .3s) 이 끝난 뒤 언마운트
+  };
+  const split = () => {
+    if (revealed || closingRef.current) return;
+    setRevealed(true);
+    if (isWin) {
+      try {
+        fireConfetti();
+      } catch (e) {}
+    }
+  };
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    // 키보드·스크린리더 사용자: 열리면 송편 버튼에 포커스, Esc 로 닫기 (실패해도 무시)
+    try {
+      bunRef.current && bunRef.current.focus({
+        preventScroll: true
+      });
+    } catch (e) {}
+    const onKey = e => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("modal-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
+  useEffect(() => {
+    if (!revealed) return;
+    try {
+      okRef.current && okRef.current.focus({
+        preventScroll: true
+      }); // 쪼개진 뒤엔 '확인' 버튼으로 포커스 이동
+    } catch (e) {}
+  }, [revealed]);
+  const h = React.createElement;
+  return h("div", {
+    className: `sp-overlay glass-overlay ${closing ? "sp-out" : "fadeIn"}`,
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": "행운의 꿀송편 결과"
+  }, h("div", {
+    className: `glass sp-card ${closing ? "sp-card-out" : "scaleIn"}`
+  }, h("button", {
+    type: "button",
+    className: "sp-close btn",
+    onClick: close,
+    "aria-label": "닫기"
+  }, h("svg", {
+    width: "15",
+    height: "15",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    viewBox: "0 0 24 24"
+  }, h("path", {
+    d: "M18 6 6 18M6 6l12 12"
+  }))), h("div", {
+    className: "sp-kicker"
+  }, "🍡 행운의 꿀송편을 찾아라!"), h("h2", {
+    className: "sp-title track-tight"
+  }, !revealed ? "갓 찐 송편이 도착했어요!" : isWin ? "행운의 꿀송편 당첨! 🍯" : "고소한 콩송편이에요! 💖"), h("div", {
+    className: "sp-stage"
+  }, h("div", {
+    className: `sp-steam ${revealed ? "sp-steam-off" : ""}`,
+    "aria-hidden": "true"
+  }, h("i"), h("i"), h("i")), h("div", {
+    className: "sp-plate",
+    "aria-hidden": "true"
+  }), h("button", {
+    ref: bunRef,
+    type: "button",
+    className: `sp-bun ${revealed ? "sp-split" : ""}`,
+    onClick: split,
+    "aria-disabled": revealed ? "true" : undefined,
+    tabIndex: revealed ? -1 : 0,
+    "aria-label": "송편 쪼개기"
+  }, h("span", {
+    className: `sp-fill ${isWin ? "sp-fill-honey" : "sp-fill-bean"}`,
+    "aria-hidden": "true"
+  }, isWin ? "🍯" : ""), h("span", {
+    className: "sp-half sp-half-l",
+    "aria-hidden": "true"
+  }), h("span", {
+    className: "sp-half sp-half-r",
+    "aria-hidden": "true"
+  }))), h("p", {
+    id: "sp-msg",
+    className: `sp-msg ${revealed && isWin ? "win" : ""}`,
+    "aria-live": "polite",
+    "aria-atomic": "true"
+  }, h("span", {
+    key: revealed ? "result" : "question",
+    className: "sp-msg-in"
+  }, !revealed ? h(React.Fragment, null, "김이 모락모락~ 어떤 송편일까요?", h("br", null), h("span", {
+    className: "sp-tap"
+  }, "👆 송편을 톡! 눌러 반으로 쪼개 보세요")) : String(isWin ? SONGPYEON_EVENT.winText : SONGPYEON_EVENT.loseText).split("\n").map((line, i) => h(React.Fragment, { key: i }, i > 0 && h("br", null), line)))), revealed && h("button", {
+    ref: okRef,
+    type: "button",
+    className: "sp-ok btn btn-g track-tight popIn",
+    "aria-describedby": "sp-msg",
+    onClick: close
+  }, "확인")));
 }
 
 // ⭐ SuccessModal 새 마일스톤 문구 적용
@@ -3246,6 +3651,7 @@ function DiaryModal({
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(null);
+  const [saveErr, setSaveErr] = useState(""); // 저장 실패 안내 (글은 지우지 않음)
   const [showAll, setShowAll] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const todayKey = () => {
@@ -3290,37 +3696,29 @@ function DiaryModal({
     const t = text.trim();
     if (!t || saving) return;
     setSaving(true);
-    const firstToday = !entries.some(e => e.date === tKey);
-    let entry = {
-      date: tKey,
-      text: t,
-      ts: Date.now()
-    };
-    let newTemp = temp,
-      rose = false;
+    setSaveErr("");
+    let r = null;
     try {
-      const r = await apiCall({
+      r = await apiCall({
         action: "logGratitude",
         user: me,
         password: pw,
         date: tKey,
         text: t
       });
-      if (r && r.ok) {
-        if (typeof r.newTemp === "number") {
-          newTemp = r.newTemp;
-          rose = !!r.rose;
-        }
-        if (r.entry && r.entry.ts) entry = r.entry; // 백엔드가 저장한 실제 항목 사용
-      } else {
-        rose = firstToday && temp < 100;
-        newTemp = rose ? Math.min(100, temp + 1) : temp;
-      }
     } catch (e) {
-      rose = firstToday && temp < 100;
-      newTemp = rose ? Math.min(100, temp + 1) : temp;
+      r = null;
     }
-    setEntries([entry, ...entries]); // 화면 즉시 반영(백엔드엔 이미 저장됨)
+    if (!(r && r.ok)) {
+      // ⚠ 저장 실패(점검 중·연결 끊김·대기 초과 등) — 쓴 글은 그대로 두고 이유를 보여줌. 가짜 성공·가짜 온도 표시 없음
+      setSaving(false);
+      setSaveErr(((r && r.error) || "연결이 불안정해요. 잠시 후 다시 시도해주세요.") + " 쓰신 글은 그대로 남아 있어요.");
+      return;
+    }
+    const entry = r.entry && r.entry.ts ? r.entry : { date: tKey, text: t, ts: Date.now() }; // 백엔드가 저장한 실제 항목 사용
+    const newTemp = typeof r.newTemp === "number" ? r.newTemp : temp;
+    const rose = typeof r.newTemp === "number" && !!r.rose;
+    setEntries(prev => [entry, ...prev.filter(e => e.ts !== entry.ts)]); // 서버 저장이 확인된 뒤에만 목록에 추가
     setSaving(false);
     setText("");
     setJustSaved({
@@ -3494,7 +3892,10 @@ function DiaryModal({
     }
   }, /*#__PURE__*/React.createElement("span", null, "📆"), /*#__PURE__*/React.createElement("span", null, fmtKor(tKey))), /*#__PURE__*/React.createElement("textarea", {
     value: text,
-    onChange: e => setText(e.target.value.slice(0, 500)),
+    onChange: e => {
+      setText(e.target.value.slice(0, 500));
+      if (saveErr) setSaveErr("");
+    },
     placeholder: "오늘 어떤 일에 감사했나요? 작은 것이라도 좋아요.",
     className: "ipt w-full px-4 py-3.5 text-slate-700 placeholder-slate-300 resize-none font-semibold text-sm leading-relaxed track-tight",
     rows: 5
@@ -3506,7 +3907,14 @@ function DiaryModal({
     className: "w-full py-4 rounded-2xl btn btn-g text-sm disabled:opacity-50 flex items-center justify-center gap-2 track-tight"
   }, saving ? /*#__PURE__*/React.createElement("span", {
     className: "sp"
-  }) : /*#__PURE__*/React.createElement("span", null, "🍂"), /*#__PURE__*/React.createElement("span", null, saving ? "저장 중..." : "감사 일기 쓰기")), justSaved && /*#__PURE__*/React.createElement("div", {
+  }) : /*#__PURE__*/React.createElement("span", null, "🍂"), /*#__PURE__*/React.createElement("span", null, saving ? "저장 중..." : "감사 일기 쓰기")), saveErr && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl p-3.5 text-center text-sm text-rose-500 font-semibold",
+    role: "alert",
+    style: {
+      background: "#FEF2F2",
+      border: "1px solid #FECACA"
+    }
+  }, saveErr), justSaved && /*#__PURE__*/React.createElement("div", {
     className: "text-center popIn pt-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-4xl mb-1 bounceY"
@@ -4013,14 +4421,20 @@ function AdminModal({ onClose }) {
     React.createElement(AdminPanel, null)));
 }
 /* ================= 루트 App — 시설·자동 로그인 + 시즌2 화면 연결 ================= */
-async function tryAutoLogin() {
+// 저장된 로그인으로 서버 확인 — 결과를 그대로 돌려줌({ok} / {badAuth} / 연결 오류)
+async function autoLoginResult() {
   var saved = GU.loadAuth();
-  if (!(saved && saved.uid && saved.pw)) return null;
+  if (!(saved && saved.uid && saved.pw)) return { ok: false, badAuth: true };
   var r = await legacyLoginAndLoad(Number(saved.uid), saved.pw);
   if (r && r.ok) return r;
   // 비밀번호 불일치·비활성일 때만 저장 정보 삭제 — 일시적 네트워크 오류는 보존
   if (r && r.badAuth) GU.clearAuth();
-  return null;
+  return r || { ok: false };
+}
+async function tryAutoLogin() {
+  if (!GU.loadAuth()) return null;
+  var r = await autoLoginResult();
+  return (r && r.ok) ? r : null;
 }
 
 function App() {
@@ -4047,6 +4461,18 @@ function App() {
     GUD.fac = fac || ((saved && GU.FACILITIES.indexOf(saved.fac) >= 0) ? saved.fac : "");
     seedLoginRosterFromCache();
     (async function () {
+      // ⚡ 빠른 부팅 — 이 기기 캐시로 대시보드를 먼저 보여주고, 서버 확인은 대시보드가 이어받음
+      var fb = fastBootShape();
+      if (fb) {
+        fb._verify = autoLoginResult();   // app.html 이 미리 보낸 로그인 요청을 그대로 소비(추가 요청 없음)
+        setMe(legacyFullOf(GUD.uid));
+        setPwS(GUD.pw);
+        setIsAdmin(GUD.adminRole <= 2);
+        setInitialData(fb);
+        setBooting(false);
+        hideSplash();
+        return;
+      }
       var r = await tryAutoLogin();
       if (!r && !GUD.fac) {
         // 자동 로그인 실패 + 시설 모름(옛 시설명 저장분) → 저장 정보를 지우고 시설 선택부터.
@@ -4073,13 +4499,38 @@ function App() {
     if (autoLogin !== false && GUD.uid) GU.saveAuth({ uid: GUD.uid, pw: password, fac: GUD.fac });
     else GU.clearAuth();
   };
-  var handleLogout = function () {
-    if (!window.confirm("로그아웃할까요?\n저장된 자동 로그인 정보와 이 기기의 쪽지 캐시도 삭제돼요.")) return;
-    GU.clearAuth();
-    if (GUD.uid) GU.dataCache.clear(GUD.uid);      // 공용 PC 개인정보 보호
-    GUD.uid = 0; GUD.pw = ""; GUD.data = null; GUD.rosterReady = false; _pf = null;
+  // 서버 확인 결과 반영(빠른 부팅) — 이름·직급·관리자 등급이 바뀌었을 수 있음
+  var handleVerified = function () {
+    if (!GUD.uid) return;
+    setMe(legacyFullOf(GUD.uid));
+    setPwS(GUD.pw);
+    setIsAdmin(GUD.adminRole <= 2);
+  };
+  // 저장된 로그인이 더 이상 유효하지 않음(비밀번호 초기화·비활성) 또는 다른 탭에서 로그아웃 → 로그인 화면으로
+  var handleAuthLost = function () {
+    GUD.uid = 0; GUD.pw = ""; GUD.data = null; GUD.rosterReady = false; _pf = null; GU.session = null;
     setMe(""); setPwS(""); setIsAdmin(false); setAdminOpen(false); setInitialData(null);
   };
+  var handleLogout = function () {
+    if (!window.confirm("로그아웃할까요?\n저장된 자동 로그인 정보와 이 기기의 쪽지 캐시도 삭제돼요.\n이 기기의 쪽지 알림도 꺼져요(다음 로그인 때 다시 켤 수 있어요).")) return;
+    try { if (GU.pushResetOnLogout) GU.pushResetOnLogout(); } catch (e) {}   // 🔔 공용 PC 알림 오배달 방지 — 세션을 지우기 전에 호출
+    GU.clearAuth();
+    if (GUD.uid) { GU.dataCache.clear(GUD.uid); GU.snapCache.clear(GUD.uid); }   // 공용 PC 개인정보 보호
+    GUD.uid = 0; GUD.pw = ""; GUD.data = null; GUD.rosterReady = false; _pf = null; GU.session = null;
+    setMe(""); setPwS(""); setIsAdmin(false); setAdminOpen(false); setInitialData(null);
+  };
+  // 다른 탭에서 같은 사용자가 로그아웃하면 이 탭도 로그인 화면으로 (옛 세션으로 계속 폴링하지 않게)
+  useEffect(function () {
+    function onStorage(e) {
+      if (e.key !== "gu3.auth" || e.newValue) return;
+      var old = GU.parseAuth ? GU.parseAuth(e.oldValue) : null;
+      if (!GUD.uid || !old || Number(old.uid) !== Number(GUD.uid)) return;
+      handleAuthLost();
+    }
+    window.addEventListener("storage", onStorage);
+    return function () { window.removeEventListener("storage", onStorage); };
+    // eslint-disable-next-line
+  }, []);
 
   if (booting) return null;   // 부팅 스플래시 표시 중
   if (!me) return React.createElement(LoginScreen, { onLogin: handleLogin });
@@ -4089,7 +4540,9 @@ function App() {
       onLogout: handleLogout,
       isAdmin: isAdmin,
       onOpenAdmin: function () { setAdminOpen(true); },
-      initialData: initialData
+      initialData: initialData,
+      onVerified: handleVerified,
+      onAuthLost: handleAuthLost
     }),
     adminOpen && React.createElement(AdminModal, { onClose: function () { setAdminOpen(false); } })
   );

@@ -114,6 +114,7 @@
     try{ raw = localStorage.getItem("gu3.auth"); }catch(e){}
     return raw ? dec(raw) : null;
   };
+  GU.parseAuth = function(raw){ return raw ? dec(raw) : null; };   // 다른 탭의 로그아웃(storage 이벤트) 판별용
   GU.clearAuth = function(){ lsDel("gu3.auth"); };
   // 목록에 없는 시설명(예: 이름 변경 전에 저장된 값)은 무시 → 시설 선택부터 다시
   GU.savedFac = function(){ var f = lsGet("gu3.fac"); return (f && GU.FACILITIES.indexOf(f) >= 0) ? f : ""; };
@@ -178,6 +179,33 @@
       _dcMemo = { uid: uid, data: data };
     },
     clear: function(uid){ lsDel(dataKey(uid)); lsDel("gu3.hasData." + uid); if(_dcMemo.uid === uid) _dcMemo = { uid:null, data:null }; }
+  };
+
+  /* ---------- 빠른 부팅용 화면 스냅샷 (온도·보상명·공지·등급 등 작은 값만) ----------
+   * 재방문 때 서버 응답을 기다리지 않고 대시보드를 먼저 그리는 데 사용. 서버 응답이 오면 곧바로 최신값으로 바뀜.
+   */
+  GU.snapCache = {
+    load: function(uid){ var o = lsGet("gu3.snap." + uid); return (o && o.v === 1) ? o : null; },
+    save: function(uid, o){ o.v = 1; lsSet("gu3.snap." + uid, o); },
+    clear: function(uid){ lsDel("gu3.snap." + uid); }
+  };
+
+  // 감사일기 병합 — ts 기준 중복 제거, 최신순. (다른 기기에서 쓴 일기를 받아 합칠 때)
+  GU.mergeDiary = function(local, incoming){
+    var seen = {}, out = [];
+    (incoming || []).concat(local || []).forEach(function(e){
+      if(!e) return;
+      var k = String(e.ts);
+      if(seen[k]) return;
+      seen[k] = 1; out.push(e);
+    });
+    out.sort(function(a,b){ return (b.ts||0) - (a.ts||0); });
+    return out;
+  };
+  GU.maxDiaryTs = function(list){
+    var m = 0;
+    (list || []).forEach(function(e){ if(e && e.ts > m) m = e.ts; });
+    return m;
   };
 
   // 신규 쪽지를 캐시에 병합 — (ts|from|to) 복합키로 중복 제거, 최신순 유지
@@ -336,16 +364,28 @@
   };
 
   GU.pushDisable = async function(){
+    var s = GU.session || {};   // 로그아웃 중에도 해제 요청이 원래 사용자 이름으로 가도록 먼저 붙잡아 둠
     try{
+      if(!("serviceWorker" in navigator)) return { ok:true };
       var reg = await navigator.serviceWorker.ready;
       var sub = await reg.pushManager.getSubscription();
       if(sub){
         var ep = sub.endpoint;
         try{ await sub.unsubscribe(); }catch(e){}
-        GU.authApi("pushUnsubscribe", { endpoint: ep });
+        if(s.uid) GU.api("pushUnsubscribe", { uid: s.uid, password: s.pw, endpoint: ep });
       }
       return { ok:true };
     }catch(e){ return { ok:false }; }
+  };
+
+  /* 🔔 로그아웃 정리 — 공용 PC에서 다음 사람의 알림이 앞사람에게 가지 않게
+   *   이 기기의 알림 구독 해제(서버 등록도 해제) · 권유 배너 제거 · 다음 로그인 때 권유 배너가 다시 뜨게 표시 초기화 */
+  GU.pushResetOnLogout = function(){
+    try{ var b = document.getElementById("gu-bnr-on"); if(b && b.parentNode && b.parentNode.parentNode) b.parentNode.parentNode.removeChild(b.parentNode); }catch(e){}
+    try{ localStorage.removeItem("gu3.pushAsked"); }catch(e){}
+    try{
+      if(("serviceWorker" in navigator) && ("PushManager" in window)) GU.pushDisable();   // 응답을 기다리지 않음(화면 전환 지연 없음)
+    }catch(e){}
   };
 
   /* 🔔 로그인 후 원탭 알림 켜기 배너 — 브라우저 규칙상 '자동 켜기'는 불가능하므로,
