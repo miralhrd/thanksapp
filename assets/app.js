@@ -79,12 +79,33 @@ function getStaffList() {
   if (GUD.rosterReady) return receiversLegacy("mine");
   return _loginRoster;
 }
+// 아이디 → 비밀번호를 만든 적이 있는지 (명단 응답·기기 캐시 공용) — 이름표 글자가 달라도 흔들리지 않게 아이디로 본다
+var _joined = {};
+function joinedOfUid(uid) {
+  return (uid && Object.prototype.hasOwnProperty.call(_joined, uid)) ? !!_joined[uid] : null;
+}
+// 가입에 성공하면 이 기기의 판정도 바로 갱신 — 다음 로그인 때 '처음 오셨군요'가 다시 뜨지 않게
+function markJoined(uid) {
+  if (!uid) return;
+  _joined[uid] = true;
+  try {
+    var c = GU.rosterCache.loadPublic(GUD.fac);
+    if (c && Array.isArray(c.staff)) {
+      var hit = false;
+      c.staff.forEach(function (s) { if (Number(s.id) === Number(uid)) { s.joined = true; hit = true; } });
+      if (hit) GU.rosterCache.savePublic(GUD.fac, c);
+    }
+  } catch (e) {}
+}
 // 로그인 화면 즉시 표시용 — 캐시된 공개 명단으로 매핑 선구축
 function seedLoginRosterFromCache() {
   var cached = GU.rosterCache.loadPublic(GUD.fac);
   if (cached && Array.isArray(cached.staff)) {
     var list = [];
-    cached.staff.forEach(function (s) { list.push(registerPerson(s.id, GUD.fac, s.dept, s.name, s.rank)); });
+    cached.staff.forEach(function (s) {
+      list.push(registerPerson(s.id, GUD.fac, s.dept, s.name, s.rank));
+      if (typeof s.joined === "boolean") _joined[s.id] = s.joined;   // ⚡ 기기에 남은 값으로 즉시 판정 (서버 답이 오면 정정)
+    });
     _loginRoster = list;
     if (cached.contact) GUD.adminContact = cached.contact;
   }
@@ -95,18 +116,14 @@ var _pf = null;
 function clearPrefetch() { _pf = null; }
 function getPrefetch() {
   if (!_pf) {
-    // ⚡ 로그인 화면 선발사 소비 — app.html이 미리 쏜 명단 요청이 있으면 재사용 (실패 시 일반 요청 폴백)
-    var __er = window.__earlyRoster; window.__earlyRoster = null;
-    var req = (__er && __er.fac === GUD.fac)
-      ? __er.promise.catch(function () { return GU.api("getRoster", { fac: GUD.fac }); })
-      : GU.api("getRoster", { fac: GUD.fac });
-    _pf = req.then(function (r) {
+    function apply(r) {
       var st = {};
       if (r && r.ok) {
         var list = [];
         (r.staff || []).forEach(function (s) {
           var full = registerPerson(s.id, GUD.fac, s.dept, s.name, s.rank);
           st[full] = !!s.joined;
+          _joined[s.id] = !!s.joined;
           list.push(full);
         });
         _loginRoster = list;
@@ -114,7 +131,14 @@ function getPrefetch() {
         GU.rosterCache.savePublic(GUD.fac, { ver: r.ver, staff: r.staff, contact: r.contact || null });
       }
       return st;
-    }).catch(function () { return {}; });
+    }
+    // ⚡ 로그인 화면 선발사 소비 — app.html이 미리 쏜 명단 요청이 있으면 재사용
+    var __er = window.__earlyRoster; window.__earlyRoster = null;
+    var req = (__er && __er.fac === GUD.fac) ? __er.promise : GU.api("getRoster", { fac: GUD.fac });
+    // 실패하면 조용히 넘기지 말고 한 번 더 — 여기서 비면 이름마다 서버에 다시 묻게 된다
+    _pf = req.then(apply).catch(function () {
+      return GU.api("getRoster", { fac: GUD.fac }).then(apply).catch(function () { return {}; });
+    });
   }
   return _pf;
 }
@@ -1548,6 +1572,7 @@ function LoginScreen({
   const [open, setOpen] = useState(false);
   const [staffReady, setStaffReady] = useState(false);
   const [autoLogin, setAutoLogin] = useState(true); // ⭐ 자동 로그인 (기본 ON)
+  const selSeqRef = useRef(0);   // 이름을 다시 고르면 앞선 확인 결과는 버림
   useEffect(() => {
     getPrefetch().then(() => setStaffReady(true));
   }, []);
@@ -1566,20 +1591,29 @@ function LoginScreen({
     setErr("");
     setPw("");
     setPw2("");
-    setStep("checking"); // ★ 신규/기존을 모르는 동안에는 '확인 중' — 비밀번호 칸을 섣불리 보여주지 않음
+    // ⚡ 이 기기에 남은 명단으로 곧바로 판정 — 모를 때만 '확인 중'을 보여준다
+    const uid0 = uidOfFull(name);
+    const known = joinedOfUid(uid0);
+    setStep(known === null ? "checking" : (known ? "pw-exist" : "pw-new"));
+    const my = ++selSeqRef.current;
     try {
       const map = await getPrefetch();
-      if (name in map) {
-        setStep(map[name] ? "pw-exist" : "pw-new");
-      } else {
+      if (selSeqRef.current !== my) return;        // 그새 다른 이름을 골랐으면 건드리지 않음
+      const uid = uid0 || uidOfFull(name);
+      let fresh = joinedOfUid(uid);
+      if (fresh === null && (name in map)) fresh = !!map[name];
+      if (fresh === null) {                        // 명단으로도 모르면 그때만 서버에 한 번 더
         const r = await apiCall({
           action: "checkUser",
           name
         });
-        setStep(r && r.ok ? (r.isNew ? "pw-new" : "pw-exist") : "pw-exist");
+        if (selSeqRef.current !== my) return;
+        fresh = (r && r.ok) ? !r.isNew : null;
       }
+      if (fresh !== null) setStep(fresh ? "pw-exist" : "pw-new");
+      else if (known === null) setStep("pw-exist");
     } catch (e) {
-      setStep("pw-exist");   // 확인 실패 — 일단 비밀번호 칸을 보여주고 사용자가 시도해 볼 수 있게
+      if (selSeqRef.current === my && known === null) setStep("pw-exist");   // 확인 실패 — 일단 비밀번호 칸
     }
   }, [loading]);   // ⚡ 참조 고정 → PersonItem memo 유효
   const doSetPw = async () => {
@@ -1601,6 +1635,7 @@ function LoginScreen({
     if (!r.ok) {
       // ① 서버가 "이미 설정된 계정" 이라고 하면 — 앞선 시도가 사실은 저장된 것. 로그인 화면으로 넘겨 준다
       if (/이미/.test(r.error || "")) {
+        markJoined(uidOfFull(sel));
         clearPrefetch();
         setLoading(false);
         setPw2("");
@@ -1615,6 +1650,7 @@ function LoginScreen({
         if (chk && chk.ok && chk.isNew === false) saved = true;
       } catch (e) {}
       if (saved) {
+        markJoined(uidOfFull(sel));
         clearPrefetch();
         const r3 = await apiCall({
           action: "loginAndLoad",
@@ -1635,6 +1671,7 @@ function LoginScreen({
       setErr(r.error || "설정 실패");
       return;
     }
+    markJoined(uidOfFull(sel));
     setLoading(false);
     setLoading(true);
     const r2 = await apiCall({
@@ -1896,7 +1933,11 @@ function LoginScreen({
   }, sp.dept))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-center gap-2 py-8 text-sm font-bold text-[#9A4B2E]"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "sp"
+    className: "sp",
+    style: {
+      borderColor: "rgba(154,75,46,0.25)",
+      borderTopColor: "#9A4B2E"
+    }
   }), "확인 중이에요…")), step === "pw-new" && /*#__PURE__*/React.createElement("div", {
     className: "popIn"
   }, /*#__PURE__*/React.createElement("button", {
