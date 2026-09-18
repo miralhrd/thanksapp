@@ -18,15 +18,24 @@
   //   서버 처리가 크면 우리 코드 문제.
   GU.perf = [];
   GU.pending = 0;   // 진행 중인 서버 요청 수 — app.html 스플래시 안전장치가 참고
+  var TIMEOUT_MS = 20000;   // 20초 넘게 답이 없으면 실패로 처리 — 무한 대기 방지
   async function post(body){
     var t0 = performance.now();
     GU.pending++;
-    var r;
-    try{ r = await fetch(GU.SHEET_URL, {
-      method: "POST", mode: "cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(body)
-    }); }catch(e){ GU.pending--; throw e; }
+    var r, ac = null, timer = null;
+    try{
+      if(typeof AbortController === "function"){
+        ac = new AbortController();
+        timer = setTimeout(function(){ try{ ac.abort(); }catch(e){} }, TIMEOUT_MS);
+      }
+      r = await fetch(GU.SHEET_URL, {
+        method: "POST", mode: "cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(body),
+        signal: ac ? ac.signal : undefined
+      });
+    }catch(e){ GU.pending--; if(timer) clearTimeout(timer); throw e; }
+    if(timer) clearTimeout(timer);
     var j;
     try{ j = await r.json(); }finally{ GU.pending--; }
     try{

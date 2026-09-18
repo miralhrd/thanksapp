@@ -91,6 +91,8 @@ function seedLoginRosterFromCache() {
 }
 // 시즌2 getAllStatuses 대응 프리페치 (1회 캐싱)
 var _pf = null;
+// 가입/비밀번호가 바뀌면 신규·기존 판정이 낡으므로 다음 조회 때 서버에 다시 물어봄
+function clearPrefetch() { _pf = null; }
 function getPrefetch() {
   if (!_pf) {
     // ⚡ 로그인 화면 선발사 소비 — app.html이 미리 쏜 명단 요청이 있으면 재사용 (실패 시 일반 요청 폴백)
@@ -1564,8 +1566,7 @@ function LoginScreen({
     setErr("");
     setPw("");
     setPw2("");
-    setStep("pw-exist"); // ★ 비밀번호 칸을 즉시 표시 (서버 응답을 안 기다림)
-    // 신규/기존 여부는 백그라운드에서 확인해 보정
+    setStep("checking"); // ★ 신규/기존을 모르는 동안에는 '확인 중' — 비밀번호 칸을 섣불리 보여주지 않음
     try {
       const map = await getPrefetch();
       if (name in map) {
@@ -1575,9 +1576,11 @@ function LoginScreen({
           action: "checkUser",
           name
         });
-        if (r && r.ok) setStep(r.isNew ? "pw-new" : "pw-exist");
+        setStep(r && r.ok ? (r.isNew ? "pw-new" : "pw-exist") : "pw-exist");
       }
-    } catch (e) {}
+    } catch (e) {
+      setStep("pw-exist");   // 확인 실패 — 일단 비밀번호 칸을 보여주고 사용자가 시도해 볼 수 있게
+    }
   }, [loading]);   // ⚡ 참조 고정 → PersonItem memo 유효
   const doSetPw = async () => {
     setErr("");
@@ -1595,11 +1598,44 @@ function LoginScreen({
       name: sel,
       password: wrapPw(pw)
     });
-    setLoading(false);
     if (!r.ok) {
+      // ① 서버가 "이미 설정된 계정" 이라고 하면 — 앞선 시도가 사실은 저장된 것. 로그인 화면으로 넘겨 준다
+      if (/이미/.test(r.error || "")) {
+        clearPrefetch();
+        setLoading(false);
+        setPw2("");
+        setStep("pw-exist");
+        setErr("이미 설정된 계정이에요. 방금 만드신 번호로 로그인해 주세요.");
+        return;
+      }
+      // ② 연결이 끊겨 실패로 보이지만 저장은 끝났을 수 있다 → 한 번 더 확인해 보고 맞으면 그대로 로그인
+      let saved = null;
+      try {
+        const chk = await apiCall({ action: "checkUser", name: sel });
+        if (chk && chk.ok && chk.isNew === false) saved = true;
+      } catch (e) {}
+      if (saved) {
+        clearPrefetch();
+        const r3 = await apiCall({
+          action: "loginAndLoad",
+          name: sel,
+          password: wrapPw(pw)
+        });
+        setLoading(false);
+        if (r3 && r3.ok) {
+          onLogin(sel, wrapPw(pw), r3, autoLogin);
+          return;
+        }
+        setPw2("");
+        setStep("pw-exist");
+        setErr("비밀번호는 저장됐어요. 방금 만드신 번호로 로그인해 주세요.");
+        return;
+      }
+      setLoading(false);
       setErr(r.error || "설정 실패");
       return;
     }
+    setLoading(false);
     setLoading(true);
     const r2 = await apiCall({
       action: "loginAndLoad",
@@ -1629,6 +1665,7 @@ function LoginScreen({
     onLogin(sel, wrapPw(pw), r, autoLogin);
   };
   const reset = () => {
+    clearPrefetch();   // 방금 가입했을 수도 있으니 신규·기존 판정을 다시 받아 옴
     setStep("select");
     setPw("");
     setPw2("");
@@ -1831,7 +1868,36 @@ function LoginScreen({
     onSelect: handleSelect
   })))))), err && /*#__PURE__*/React.createElement("p", {
     className: "mt-3 text-xs text-rose-500 font-semibold text-center"
-  }, err)), step === "pw-new" && /*#__PURE__*/React.createElement("div", {
+  }, err)), step === "checking" && sp && /*#__PURE__*/React.createElement("div", {
+    className: "popIn"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: reset,
+    className: "text-xs font-bold text-[#9A4B2E] hover:text-[#5C4033] mb-5 btn track-tight"
+  }, "← 이름 다시 선택"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3 rounded-2xl p-4 mb-5",
+    style: {
+      background: "#F8FAFC",
+      border: "1px solid var(--line-soft)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-12 h-12 rounded-full flex items-center justify-center font-extrabold text-lg flex-shrink-0",
+    style: {
+      background: "linear-gradient(135deg,#FAF3E8,#F4E6D3)",
+      color: "#5C4033"
+    }
+  }, sp.name.charAt(0)), /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-extrabold text-slate-900 text-sm truncate track-tight"
+  }, sp.name, " ", /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-medium text-slate-400"
+  }, sp.role)), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-slate-400 truncate font-medium"
+  }, sp.dept))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-center gap-2 py-8 text-sm font-bold text-[#9A4B2E]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sp"
+  }), "확인 중이에요…")), step === "pw-new" && /*#__PURE__*/React.createElement("div", {
     className: "popIn"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: reset,
